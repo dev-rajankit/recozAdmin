@@ -96,24 +96,23 @@ export function MembersView() {
     }
   };
   
-  const handleUpdateMember = async (updatedMember: Member) => {
+  const handleUpdateMember = async (updatedMemberData: Member) => {
      try {
-      const response = await fetch(`/api/members/${updatedMember.id}`, {
+      const response = await fetch(`/api/members/${updatedMemberData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedMember),
+        body: JSON.stringify(updatedMemberData),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to update member');
       toast({ title: 'Success', description: 'Member updated successfully.' });
-      fetchMembers();
       
-      const refreshedMember = {
-        ...data,
-        status: getStatus(new Date(data.dueDate)),
-      };
+      await fetchMembers();
       
-      if(viewingMember?.id === updatedMember.id) {
+      // After fetching all members, find the updated one to refresh the details view
+      const refreshedMember = { ...data, status: getStatus(new Date(data.dueDate)) };
+
+      if(viewingMember?.id === updatedMemberData.id) {
         setViewingMember(refreshedMember);
       }
 
