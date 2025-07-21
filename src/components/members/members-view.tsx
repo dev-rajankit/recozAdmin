@@ -40,7 +40,7 @@ export function MembersView() {
       if (!response.ok) throw new Error(data.message || 'Failed to fetch members');
       
       // Recalculate status on the client-side based on current date
-      const membersWithStatus = data.map((member: Member) => ({
+      const membersWithStatus = data.map((member: any) => ({ // Use any to handle raw data from API
         ...member,
         status: getStatus(new Date(member.dueDate)),
         dueDate: new Date(member.dueDate),
