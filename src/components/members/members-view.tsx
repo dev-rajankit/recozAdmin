@@ -94,7 +94,7 @@ export function MembersView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to add member');
       toast({ title: 'Success', description: 'Member added successfully.' });
-      fetchMembers(); // Refetch all members
+      fetchMembers();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error adding member', description: error.message });
     }
@@ -111,14 +111,14 @@ export function MembersView() {
       if (!response.ok) throw new Error(data.message || 'Failed to update member');
       toast({ title: 'Success', description: 'Member updated successfully.' });
       
-      await fetchMembers(); // Refetch all members
+      await fetchMembers();
       
-      const refreshedMemberInList = (await (await fetch('/api/members')).json()).find((m: any) => m._id === data._id);
-
       if (viewingMember?.id === updatedMemberData.id) {
-        if(refreshedMemberInList) {
-            setViewingMember({...refreshedMemberInList, id: refreshedMemberInList._id.toString(), status: getStatus(new Date(refreshedMemberInList.dueDate))});
-        }
+        setViewingMember({
+            ...data, 
+            id: data._id, 
+            status: getStatus(new Date(data.dueDate))
+        });
       }
 
     } catch (error: any) {
@@ -129,18 +129,38 @@ export function MembersView() {
   const handleDeleteConfirm = async () => {
     if(!memberToDelete) return;
     const { id, permanent } = memberToDelete;
-    const url = permanent ? `/api/members/${id}?permanent=true` : `/api/members/${id}`;
     
+    // Optimistic UI update
+    const memberToMove = members.find(m => m.id === id);
+    if (memberToMove && !permanent) {
+        setMembers(prev => prev.filter(m => m.id !== id));
+        setDeletedMembers(prev => [...prev, { ...memberToMove, deletedAt: new Date() }]);
+    }
+    if (permanent) {
+        setDeletedMembers(prev => prev.filter(m => m.id !== id));
+    }
+
     try {
+      const url = permanent ? `/api/members/${id}?permanent=true` : `/api/members/${id}`;
       const response = await fetch(url, {
         method: 'DELETE',
       });
        const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to delete member');
-      toast({ title: 'Success', description: data.message });
-      fetchMembers();
+      if (!response.ok) {
+        // Revert UI on failure
+        toast({ variant: 'destructive', title: 'Error deleting member', description: data.message || 'Failed to delete member' });
+        fetchMembers(); // Re-fetch to get correct state
+      } else {
+        toast({ title: 'Success', description: data.message });
+        // No need to call fetchMembers() on success for soft-delete, as UI is already updated.
+        if (permanent) {
+            fetchMembers(); // Re-fetch only on permanent delete
+        }
+      }
     } catch (error: any) {
+      // Revert UI on failure
       toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
+      fetchMembers(); // Re-fetch to get correct state
     } finally {
       setMemberToDelete(null);
     }
@@ -148,16 +168,30 @@ export function MembersView() {
 
   const handleRestoreConfirm = async () => {
     if (!memberToRestore) return;
+
+    // Optimistic UI Update
+    const memberToMove = deletedMembers.find(m => m.id === memberToRestore);
+    if (memberToMove) {
+        setDeletedMembers(prev => prev.filter(m => m.id !== memberToRestore));
+        const restoredMember = { ...memberToMove, deletedAt: null, status: getStatus(new Date(memberToMove.dueDate)) };
+        setMembers(prev => [...prev, restoredMember]);
+    }
+
     try {
       const response = await fetch(`/api/members/${memberToRestore}/restore`, {
         method: 'PUT'
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to restore member');
-      toast({ title: 'Success', description: 'Member restored successfully.' });
-      fetchMembers();
+      if (!response.ok) {
+        toast({ variant: 'destructive', title: 'Error restoring member', description: data.message });
+        fetchMembers(); // Revert
+      } else {
+        toast({ title: 'Success', description: 'Member restored successfully.' });
+        // No need to fetch on success
+      }
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error restoring member', description: error.message });
+      fetchMembers(); // Revert
     } finally {
       setMemberToRestore(null);
     }
