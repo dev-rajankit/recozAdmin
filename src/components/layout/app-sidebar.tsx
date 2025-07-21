@@ -61,8 +61,8 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
             <Building className="h-5 w-5" />
           </Button>
           <div className="flex flex-col">
-            <h2 className="font-headline text-lg font-semibold">CoWork Central</h2>
-            <p className="text-xs text-muted-foreground">Recoz Admin</p>
+            <h2 className="font-headline text-lg font-semibold">Recoz Library Admin</h2>
+            <p className="text-xs text-muted-foreground">Admin</p>
           </div>
         </div>
       </SidebarHeader>

@@ -4,8 +4,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/auth-context';
 
 export const metadata: Metadata = {
-  title: 'CoWork Central',
-  description: 'Admin Dashboard for Co-working Space Management',
+  title: 'Recoz Library Admin',
+  description: 'Admin Dashboard for Recoz Library Management',
 };
 
 export default function RootLayout({

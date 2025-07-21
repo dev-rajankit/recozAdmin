@@ -23,7 +23,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
   const mailOptions = {
     from,
     to: email,
-    subject: 'Reset Your Password for CoWork Central',
+    subject: 'Reset Your Password for Recoz Library Admin',
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2>Password Reset Request</h2>
@@ -34,7 +34,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
         <p>If you did not request a password reset, please ignore this email.</p>
         <hr/>
         <p>Thanks,</p>
-        <p>The CoWork Central Team</p>
+        <p>The Recoz Library Admin Team</p>
       </div>
     `,
   };
