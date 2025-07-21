@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
@@ -53,19 +54,19 @@ export function MembersView() {
   const fetchMembers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [membersRes, deletedMembersRes] = await Promise.all([
+      const [activeMembersRes, deletedMembersRes] = await Promise.all([
         fetch('/api/members'),
         fetch('/api/members?includeDeleted=true')
       ]);
 
-      if (!membersRes.ok || !deletedMembersRes.ok) {
+      if (!activeMembersRes.ok || !deletedMembersRes.ok) {
         throw new Error('Failed to fetch members');
       }
       
-      const membersData = await membersRes.json();
+      const activeMembersData = await activeMembersRes.json();
       const deletedMembersData = await deletedMembersRes.json();
 
-      const membersWithStatus = membersData.map((member: any) => ({
+      const membersWithStatus = activeMembersData.map((member: any) => ({
         ...member,
         status: getStatus(new Date(member.dueDate)),
         dueDate: new Date(member.dueDate),
