@@ -68,9 +68,11 @@ export function FinancialView() {
         }
 
         const members: Member[] = await membersRes.json();
-        const expenses: Expense[] = await expensesRes.json();
+        const expensesData: Expense[] = await expensesRes.json();
         
-        // --- Process Data ---
+        const expenses = expensesData.map(e => ({...e, date: new Date(e.date)}));
+        const membersWithDates = members.map(m => ({...m, paymentDate: new Date(m.paymentDate)}));
+
         const now = new Date();
         const monthlyData: MonthlyData[] = [];
         const growthData: GrowthData[] = [];
@@ -81,24 +83,24 @@ export function FinancialView() {
             const monthStart = startOfMonth(date);
             const monthEnd = endOfMonth(date);
 
-            const monthlyRevenue = members
+            const monthlyRevenue = membersWithDates
                 .filter(m => {
-                    const paymentDate = new Date(m.paymentDate);
+                    const paymentDate = m.paymentDate;
                     return paymentDate >= monthStart && paymentDate <= monthEnd;
                 })
                 .reduce((sum, m) => sum + m.feesPaid, 0);
 
             const monthlyExpenses = expenses
                 .filter(e => {
-                    const expenseDate = new Date(e.date);
+                    const expenseDate = e.date;
                     return expenseDate >= monthStart && expenseDate <= monthEnd;
                 })
                 .reduce((sum, e) => sum + e.amount, 0);
             
             monthlyData.push({ name: monthName, revenue: monthlyRevenue, expenses: monthlyExpenses });
 
-            const newMembersThisMonth = members.filter(m => {
-                const paymentDate = new Date(m.paymentDate);
+            const newMembersThisMonth = membersWithDates.filter(m => {
+                const paymentDate = m.paymentDate;
                 return paymentDate >= monthStart && paymentDate <= monthEnd;
             }).length;
             

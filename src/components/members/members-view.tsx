@@ -66,21 +66,8 @@ export function MembersView() {
       const activeData = await activeRes.json();
       const deletedData = await deletedRes.json();
 
-      const activeMembersWithStatus = activeData.map((member: any) => ({
-        ...member,
-        status: getStatus(new Date(member.dueDate)),
-        dueDate: new Date(member.dueDate),
-        paymentDate: new Date(member.paymentDate)
-      }));
-       const deletedMembersWithDates = deletedData.map((member: any) => ({
-        ...member,
-        dueDate: new Date(member.dueDate),
-        paymentDate: new Date(member.paymentDate),
-        deletedAt: new Date(member.deletedAt)
-      }));
-
-      setMembers(activeMembersWithStatus);
-      setDeletedMembers(deletedMembersWithDates);
+      setMembers(activeData.map((m: any) => ({...m, status: getStatus(new Date(m.dueDate))})));
+      setDeletedMembers(deletedData);
 
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -120,9 +107,14 @@ export function MembersView() {
       if (!response.ok) throw new Error(data.message || 'Failed to update member');
       toast({ title: 'Success', description: 'Member updated successfully.' });
       fetchMembers();
-      // If the currently viewed member is the one being updated, refresh the details dialog
+      
+      const refreshedMember = {
+        ...data,
+        status: getStatus(new Date(data.dueDate)),
+      };
+      
       if(viewingMember?.id === updatedMember.id) {
-        setViewingMember(updatedMember);
+        setViewingMember(refreshedMember);
       }
 
     } catch (error: any) {

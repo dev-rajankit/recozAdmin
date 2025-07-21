@@ -29,7 +29,6 @@ export function DashboardView() {
         }
         const members: Member[] = await response.json();
         
-        // Calculations moved inside useEffect to run only on client
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -40,7 +39,6 @@ export function DashboardView() {
             .filter(m => new Date(m.paymentDate) >= firstDayOfMonth)
             .reduce((sum, m) => sum + m.feesPaid, 0);
 
-        // Considering expired members for pending payments
         const pendingPayments = members
             .filter(m => new Date(m.dueDate) < now) 
             .reduce((sum, m) => sum + m.feesPaid, 0);
@@ -78,7 +76,6 @@ export function DashboardView() {
     );
   }
 
-  // Dummy trend data, can be replaced with historical comparison later
   const activeMembersTrend = 0;
   const expiredMembersTrend = 0;
   const revenueTrend = 0;

@@ -44,10 +44,10 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
       setName(member.name);
       setPhone(member.phone);
       setAadharNumber(member.aadharNumber || "");
-      setDueDate(member.dueDate);
+      setDueDate(member.dueDate ? new Date(member.dueDate) : undefined);
       setSeatingHours(member.seatingHours.toString());
       setFeesPaid(member.feesPaid.toString());
-      setPaymentDate(member.paymentDate);
+      setPaymentDate(member.paymentDate ? new Date(member.paymentDate) : undefined);
       setSeatNumber(member.seatNumber || "");
       setIsSeatReserved(member.isSeatReserved || false);
     } else {
