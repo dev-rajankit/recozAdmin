@@ -61,7 +61,7 @@ export function MembersView() {
     fetchMembers();
   }, [fetchMembers]);
   
-  const handleAddMember = async (memberData: Omit<Member, 'id' | 'status' | 'avatarUrl'>) => {
+  const handleAddMember = async (memberData: Omit<Member, 'id' | 'status' | 'avatarUrl' | 'deletedAt'>) => {
     try {
       const response = await fetch('/api/members', {
         method: 'POST',
@@ -102,7 +102,6 @@ export function MembersView() {
   const handleDeleteConfirm = async () => {
     if (!memberToDelete) return;
     
-    // Optimistic UI update
     setAllMembers(prev => prev.filter(m => m.id !== memberToDelete));
 
     try {
@@ -116,13 +115,9 @@ export function MembersView() {
       }
 
       toast({ title: 'Success', description: 'Member permanently deleted.' });
-      // We don't need to re-fetch because of optimistic update,
-      // but a re-fetch can be done here to ensure consistency if needed.
-      // await fetchMembers(); 
     } catch (error: any) {
-      // Revert UI on error
       toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
-      fetchMembers(); // Re-fetch to get the correct state from the server
+      fetchMembers();
     } finally {
       setMemberToDelete(null);
     }
@@ -158,7 +153,6 @@ export function MembersView() {
             break;
         case 'all':
         default:
-            // listToFilter is already allMembers
             break;
     }
 

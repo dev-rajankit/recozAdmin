@@ -1,3 +1,4 @@
+
 export type MemberStatus = 'Active' | 'Expiring Soon' | 'Expired';
 
 export type Member = {
@@ -11,8 +12,9 @@ export type Member = {
   paymentDate: Date;
   status: MemberStatus;
   avatarUrl: string;
-  seatNumber?: string;
-  isSeatReserved?: boolean;
+  seatNumber: string;
+  isSeatReserved: boolean;
+  deletedAt?: Date | null;
 };
 
 export type ExpenseCategory = 'Rent' | 'Electricity' | 'Internet' | 'Water' | 'Maintenance' | 'Supplies' | 'Cleaning' | 'Other';

@@ -1,3 +1,4 @@
+
 import mongoose, { Document, Schema, Model } from 'mongoose';
 import type { MemberStatus } from '@/types';
 
@@ -11,8 +12,9 @@ export interface IMember extends Document {
   paymentDate: Date;
   status: MemberStatus;
   avatarUrl: string;
-  seatNumber?: string;
-  isSeatReserved?: boolean;
+  seatNumber: string;
+  isSeatReserved: boolean;
+  deletedAt?: Date | null;
 }
 
 const MemberSchema: Schema<IMember> = new Schema({
@@ -27,6 +29,7 @@ const MemberSchema: Schema<IMember> = new Schema({
   avatarUrl: { type: String, required: true },
   seatNumber: { type: String, default: '' },
   isSeatReserved: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null },
 });
 
 const MemberModel: Model<IMember> = mongoose.models.Member || mongoose.model<IMember>('Member', MemberSchema);
