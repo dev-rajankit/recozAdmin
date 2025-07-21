@@ -59,22 +59,27 @@ export function MembersView() {
         fetch('/api/members?includeDeleted=true')
       ]);
 
-      if (!activeRes.ok || !deletedRes.ok) {
-        throw new Error('Failed to fetch members');
+      if (!activeRes.ok) {
+        throw new Error(`Failed to fetch active members: ${activeRes.statusText}`);
+      }
+      if (!deletedRes.ok) {
+        throw new Error(`Failed to fetch deleted members: ${deletedRes.statusText}`);
       }
       
       const activeData = await activeRes.json();
       const deletedData = await deletedRes.json();
 
+      // The status is client-side logic, so we compute it here.
       setMembers(activeData.map((m: any) => ({...m, status: getStatus(new Date(m.dueDate))})));
       setDeletedMembers(deletedData);
 
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      toast({ variant: 'destructive', title: 'Error fetching members', description: error.message });
     } finally {
       setIsLoading(false);
     }
   }, [toast, getStatus]);
+
 
   useEffect(() => {
     fetchMembers();
@@ -90,9 +95,9 @@ export function MembersView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to add member');
       toast({ title: 'Success', description: 'Member added successfully.' });
-      fetchMembers();
+      fetchMembers(); // Refetch all members
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      toast({ variant: 'destructive', title: 'Error adding member', description: error.message });
     }
   };
   
@@ -107,17 +112,16 @@ export function MembersView() {
       if (!response.ok) throw new Error(data.message || 'Failed to update member');
       toast({ title: 'Success', description: 'Member updated successfully.' });
       
-      await fetchMembers();
+      await fetchMembers(); // Refetch all members
       
-      // After fetching all members, find the updated one to refresh the details view
-      const refreshedMember = { ...data, status: getStatus(new Date(data.dueDate)) };
+      const refreshedMember = members.find(m => m.id === data._id) || { ...data, status: getStatus(new Date(data.dueDate)) };
 
       if(viewingMember?.id === updatedMemberData.id) {
         setViewingMember(refreshedMember);
       }
 
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      toast({ variant: 'destructive', title: 'Error updating member', description: error.message });
     }
   };
 
@@ -133,9 +137,9 @@ export function MembersView() {
        const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to delete member');
       toast({ title: 'Success', description: data.message });
-      fetchMembers();
+      fetchMembers(); // Refetch all members
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
     } finally {
       setMemberToDelete(null);
     }
@@ -150,9 +154,9 @@ export function MembersView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to restore member');
       toast({ title: 'Success', description: 'Member restored successfully.' });
-      fetchMembers();
+      fetchMembers(); // Refetch all members
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      toast({ variant: 'destructive', title: 'Error restoring member', description: error.message });
     } finally {
       setMemberToRestore(null);
     }
