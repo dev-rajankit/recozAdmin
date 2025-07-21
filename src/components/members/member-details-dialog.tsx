@@ -48,7 +48,13 @@ export function MemberDetailsDialog({ isOpen, setIsOpen, member, onEdit }: Membe
     if (!member || !member.phone) return "";
     const phoneNumber = member.phone.replace(/[^0-9]/g, ''); // Remove non-numeric characters
     const formattedDueDate = format(new Date(member.dueDate), "MMMM dd, yyyy");
-    const message = `Hi ${member.name}, this is a friendly reminder from Recoz Library. Your membership is expiring on ${formattedDueDate}. To avoid any inconvenience, please recharge at your earliest convenience. Thank you!`;
+    
+    const message = `Dear Member,
+
+We hope you're enjoying the services at Recoz Library. This is a courteous reminder that your membership is due to expire on ${formattedDueDate}.
+
+To ensure uninterrupted access to our facilities, kindly renew your membership at your earliest convenience. For your ease, we have attached a QR code below to facilitate instant online payment.`;
+
     const encodedMessage = encodeURIComponent(message);
     // Assuming Indian phone numbers, add 91 if not present
     const fullPhoneNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
