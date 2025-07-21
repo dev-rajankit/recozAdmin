@@ -6,8 +6,8 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'Recoz Library Admin',
-  description: 'Admin Dashboard for Recoz Library Management',
+  title: 'CoWork Central',
+  description: 'Admin Dashboard for CoWork Central',
   manifest: '/manifest.json',
 };
 
@@ -30,7 +30,6 @@ export default function RootLayout({
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
-            suppressHydrationWarning
         >
           <AuthProvider>
             {children}
