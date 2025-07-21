@@ -21,7 +21,6 @@ export function DashboardView() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      setIsLoading(true);
       try {
         const response = await fetch('/api/members');
         if (!response.ok) {

@@ -56,7 +56,6 @@ export function FinancialView() {
 
   useEffect(() => {
     const fetchFinancialData = async () => {
-      setIsLoading(true);
       try {
         const [membersRes, expensesRes] = await Promise.all([
           fetch('/api/members'),
