@@ -21,6 +21,7 @@ export function DashboardView() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      // Keep loading true at the start of fetch
       setIsLoading(true);
       try {
         const response = await fetch('/api/members');
@@ -57,6 +58,8 @@ export function DashboardView() {
           title: 'Error fetching dashboard data',
           description: error.message,
         });
+        // Set stats to null or a default error state if fetch fails
+        setStats(null);
       } finally {
         setIsLoading(false);
       }
@@ -65,7 +68,7 @@ export function DashboardView() {
     fetchDashboardData();
   }, [toast]);
 
-  if (isLoading || !stats) {
+  if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Skeleton className="h-28" />
@@ -74,6 +77,14 @@ export function DashboardView() {
         <Skeleton className="h-28" />
       </div>
     );
+  }
+  
+  if (!stats) {
+    return (
+       <div className="flex items-center justify-center p-8">
+         <p>Could not load dashboard data.</p>
+       </div>
+    )
   }
 
   const activeMembersTrend = 0;
