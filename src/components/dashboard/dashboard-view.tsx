@@ -1,44 +1,112 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { StatCard } from "./stat-card";
 import { Users, IndianRupee, UserX, Hourglass } from "lucide-react";
-import { members } from "@/lib/data";
+import { Skeleton } from "../ui/skeleton";
+import type { Member } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+
+interface DashboardStats {
+  activeMembers: number;
+  expiredMembers: number;
+  monthlyRevenue: number;
+  pendingPayments: number;
+}
 
 export function DashboardView() {
-  const activeMembers = members.filter(m => m.status === 'Active').length;
-  const expiredMembers = members.filter(m => m.status === 'Expired').length;
-  // Dummy data for trends
-  const activeMembersTrend = 12.5;
-  const expiredMembersTrend = -3.2;
-  const monthlyRevenue = 85600;
-  const revenueTrend = 20.1;
-  const pendingPayments = 12500;
-  const pendingPaymentsTrend = 5;
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/members');
+        if (!response.ok) {
+          throw new Error('Failed to fetch member data');
+        }
+        const members: Member[] = await response.json();
+        
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const activeMembers = members.filter(m => new Date(m.dueDate) >= now).length;
+        const expiredMembers = members.length - activeMembers;
+        
+        const monthlyRevenue = members
+            .filter(m => new Date(m.paymentDate) >= firstDayOfMonth)
+            .reduce((sum, m) => sum + m.feesPaid, 0);
+
+        const pendingPayments = members
+            .filter(m => new Date(m.dueDate) < now) // Considering expired members for pending payments
+            .reduce((sum, m) => sum + m.feesPaid, 0);
+
+
+        setStats({
+          activeMembers,
+          expiredMembers,
+          monthlyRevenue,
+          pendingPayments,
+        });
+
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Error fetching dashboard data',
+          description: error.message,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [toast]);
+
+  if (isLoading || !stats) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Skeleton className="h-28" />
+        <Skeleton className="h-28" />
+        <Skeleton className="h-28" />
+        <Skeleton className="h-28" />
+      </div>
+    );
+  }
+
+  // Dummy trend data, can be replaced with historical comparison later
+  const activeMembersTrend = 0;
+  const expiredMembersTrend = 0;
+  const revenueTrend = 0;
+  const pendingPaymentsTrend = 0;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="Active Members"
-        value={activeMembers.toString()}
+        value={stats.activeMembers.toString()}
         trend={activeMembersTrend}
         icon={<Users className="h-5 w-5" />}
       />
       <StatCard
         title="Expired Members"
-        value={expiredMembers.toString()}
+        value={stats.expiredMembers.toString()}
         trend={expiredMembersTrend}
         icon={<UserX className="h-5 w-5" />}
-        trendPeriod="less than last month"
+        trendPeriod=""
       />
       <StatCard
         title="Monthly Revenue"
-        value={monthlyRevenue.toLocaleString('en-IN')}
+        value={stats.monthlyRevenue.toLocaleString('en-IN')}
         valuePrefix="₹"
         trend={revenueTrend}
         icon={<IndianRupee className="h-5 w-5" />}
       />
       <StatCard
         title="Pending Payments"
-        value={pendingPayments.toLocaleString('en-IN')}
+        value={stats.pendingPayments.toLocaleString('en-IN')}
         valuePrefix="₹"
         trend={pendingPaymentsTrend}
         icon={<Hourglass className="h-5 w-5" />}
