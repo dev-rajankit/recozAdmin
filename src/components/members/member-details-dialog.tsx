@@ -47,7 +47,8 @@ export function MemberDetailsDialog({ isOpen, setIsOpen, member, onEdit }: Membe
   const getWhatsAppLink = () => {
     if (!member || !member.phone) return "";
     const phoneNumber = member.phone.replace(/[^0-9]/g, ''); // Remove non-numeric characters
-    const message = `Hi ${member.name}, this is a friendly reminder from CoWork Central. Your membership is due for recharge. Thank you!`;
+    const formattedDueDate = format(new Date(member.dueDate), "MMMM dd, yyyy");
+    const message = `Hi ${member.name}, this is a friendly reminder from Recoz Library. Your membership is expiring on ${formattedDueDate}. To avoid any inconvenience, please recharge at your earliest convenience. Thank you!`;
     const encodedMessage = encodeURIComponent(message);
     // Assuming Indian phone numbers, add 91 if not present
     const fullPhoneNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
