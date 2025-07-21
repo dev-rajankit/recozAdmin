@@ -9,20 +9,16 @@ import { MembersTable } from "./members-table";
 import { AddMemberDialog } from "./add-member-dialog";
 import { Member, MemberStatus } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-
-const getStatus = (dueDate: Date): MemberStatus => {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const due = new Date(dueDate);
-  due.setHours(0, 0, 0, 0);
-
-  const sevenDaysFromNow = new Date(now);
-  sevenDaysFromNow.setDate(now.getDate() + 7);
-
-  if (due < now) return 'Expired';
-  if (due <= sevenDaysFromNow) return 'Expiring Soon';
-  return 'Active';
-};
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function MembersView() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -30,7 +26,23 @@ export function MembersView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  const getStatus = (dueDate: Date): MemberStatus => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+
+    const sevenDaysFromNow = new Date(now);
+    sevenDaysFromNow.setDate(now.getDate() + 7);
+
+    if (due < now) return 'Expired';
+    if (due <= sevenDaysFromNow) return 'Expiring Soon';
+    return 'Active';
+  };
+
 
   const fetchMembers = async () => {
     setIsLoading(true);
@@ -39,8 +51,7 @@ export function MembersView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to fetch members');
       
-      // Recalculate status on the client-side based on current date
-      const membersWithStatus = data.map((member: any) => ({ // Use any to handle raw data from API
+      const membersWithStatus = data.map((member: any) => ({
         ...member,
         status: getStatus(new Date(member.dueDate)),
         dueDate: new Date(member.dueDate),
@@ -69,7 +80,7 @@ export function MembersView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to add member');
       toast({ title: 'Success', description: 'Member added successfully.' });
-      fetchMembers(); // Re-fetch to get the new list with ID
+      fetchMembers();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
@@ -91,10 +102,10 @@ export function MembersView() {
     }
   };
 
-  const handleDeleteMember = async (memberId: string) => {
-    if (!confirm('Are you sure you want to delete this member?')) return;
+  const handleDeleteConfirm = async () => {
+    if(!memberToDelete) return;
     try {
-      const response = await fetch(`/api/members/${memberId}`, {
+      const response = await fetch(`/api/members/${memberToDelete}`, {
         method: 'DELETE',
       });
        const data = await response.json();
@@ -103,6 +114,8 @@ export function MembersView() {
       fetchMembers();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+      setMemberToDelete(null);
     }
   };
   
@@ -117,6 +130,7 @@ export function MembersView() {
   }
 
   const filteredMembers = useMemo(() => {
+    if (!members) return [];
     return members.filter((member) =>
       member.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -131,51 +145,68 @@ export function MembersView() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search members..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search members..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button onClick={openAddDialog}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Member
+          </Button>
         </div>
-        <Button onClick={openAddDialog}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Member
-        </Button>
+
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList>
+            <TabsTrigger value="all">All Members</TabsTrigger>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="expiring">Expiring Soon</TabsTrigger>
+            <TabsTrigger value="expired">Expired</TabsTrigger>
+          </TabsList>
+          <TabsContent value="all" className="mt-4">
+            <MembersTable members={filteredMembers} onEdit={openEditDialog} onDelete={setMemberToDelete} isLoading={isLoading} />
+          </TabsContent>
+          <TabsContent value="active" className="mt-4">
+            <MembersTable members={getMembersByStatus("Active")} onEdit={openEditDialog} onDelete={setMemberToDelete} isLoading={isLoading} />
+          </TabsContent>
+          <TabsContent value="expiring" className="mt-4">
+            <MembersTable members={getExpiringSoonMembers()} onEdit={openEditDialog} onDelete={setMemberToDelete} isLoading={isLoading} />
+          </TabsContent>
+          <TabsContent value="expired" className="mt-4">
+            <MembersTable members={getMembersByStatus("Expired")} onEdit={openEditDialog} onDelete={setMemberToDelete} isLoading={isLoading} />
+          </TabsContent>
+        </Tabs>
+        
+        <AddMemberDialog
+          isOpen={isDialogOpen}
+          setIsOpen={setIsDialogOpen}
+          onAddMember={handleAddMember}
+          onUpdateMember={handleUpdateMember}
+          member={editingMember}
+        />
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList>
-          <TabsTrigger value="all">All Members</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="expiring">Expiring Soon</TabsTrigger>
-          <TabsTrigger value="expired">Expired</TabsTrigger>
-        </TabsList>
-        <TabsContent value="all" className="mt-4">
-          <MembersTable members={filteredMembers} onEdit={openEditDialog} onDelete={handleDeleteMember} isLoading={isLoading} />
-        </TabsContent>
-        <TabsContent value="active" className="mt-4">
-          <MembersTable members={getMembersByStatus("Active")} onEdit={openEditDialog} onDelete={handleDeleteMember} isLoading={isLoading} />
-        </TabsContent>
-        <TabsContent value="expiring" className="mt-4">
-          <MembersTable members={getExpiringSoonMembers()} onEdit={openEditDialog} onDelete={handleDeleteMember} isLoading={isLoading} />
-        </TabsContent>
-        <TabsContent value="expired" className="mt-4">
-          <MembersTable members={getMembersByStatus("Expired")} onEdit={openEditDialog} onDelete={handleDeleteMember} isLoading={isLoading} />
-        </TabsContent>
-      </Tabs>
-      
-      <AddMemberDialog
-        isOpen={isDialogOpen}
-        setIsOpen={setIsDialogOpen}
-        onAddMember={handleAddMember}
-        onUpdateMember={handleUpdateMember}
-        member={editingMember}
-      />
-    </div>
+      <AlertDialog open={!!memberToDelete} onOpenChange={(open) => !open && setMemberToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this member's data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setMemberToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

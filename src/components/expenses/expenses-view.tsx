@@ -6,6 +6,16 @@ import { AddExpenseForm } from "./add-expense-form";
 import { ExpensesHistory } from "./expenses-history";
 import type { Expense, ExpenseCategory } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export function ExpensesView() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -13,6 +23,7 @@ export function ExpensesView() {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [isLoading, setIsLoading] = useState(true);
+  const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchExpenses = async () => {
@@ -49,10 +60,10 @@ export function ExpensesView() {
     }
   };
 
-  const handleDeleteExpense = async (expenseId: string) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+  const handleDeleteConfirm = async () => {
+    if (!expenseToDelete) return;
      try {
-      const response = await fetch(`/api/expenses/${expenseId}`, {
+      const response = await fetch(`/api/expenses/${expenseToDelete}`, {
         method: 'DELETE',
       });
        const data = await response.json();
@@ -62,6 +73,8 @@ export function ExpensesView() {
     } catch (error: any)
     {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+        setExpenseToDelete(null);
     }
   };
   
@@ -81,30 +94,47 @@ export function ExpensesView() {
   }, [expenses, typeFilter, startDate, endDate]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-1">
-        <Card>
-          <CardHeader>
-            <CardTitle>Add New Expense</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AddExpenseForm onAddExpense={handleAddExpense} />
-          </CardContent>
-        </Card>
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Add New Expense</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AddExpenseForm onAddExpense={handleAddExpense} />
+            </CardContent>
+          </Card>
+        </div>
+        <div className="lg:col-span-2">
+          <ExpensesHistory
+            expenses={filteredExpenses}
+            onDelete={setExpenseToDelete}
+            typeFilter={typeFilter}
+            setTypeFilter={setTypeFilter}
+            startDate={startDate}
+            setStartDate={setStartDate}
+            endDate={endDate}
+            setEndDate={setEndDate}
+            resetFilters={resetFilters}
+          />
+        </div>
       </div>
-      <div className="lg:col-span-2">
-        <ExpensesHistory
-          expenses={filteredExpenses}
-          onDelete={handleDeleteExpense}
-          typeFilter={typeFilter}
-          setTypeFilter={setTypeFilter}
-          startDate={startDate}
-          setStartDate={setStartDate}
-          endDate={endDate}
-          setEndDate={setEndDate}
-          resetFilters={resetFilters}
-        />
-      </div>
-    </div>
+
+       <AlertDialog open={!!expenseToDelete} onOpenChange={(open) => !open && setExpenseToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this expense record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setExpenseToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

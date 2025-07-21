@@ -11,10 +11,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, LogOut, Settings, User } from "lucide-react";
+import { Bell, LogOut, Settings, User, Moon, Sun } from "lucide-react";
 import { SidebarTrigger } from "../ui/sidebar";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
 interface HeaderProps {
   title: string;
@@ -23,6 +24,7 @@ interface HeaderProps {
 export function Header({ title }: HeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { setTheme, theme } = useTheme();
 
   const handleLogout = () => {
     logout();
@@ -35,7 +37,12 @@ export function Header({ title }: HeaderProps) {
         <SidebarTrigger className="md:hidden" />
         <h1 className="text-xl font-headline font-semibold">{title}</h1>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+           <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+           <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notifications</span>
