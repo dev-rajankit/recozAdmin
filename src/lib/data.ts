@@ -7,6 +7,7 @@ const addDays = (date: Date, days: number): Date => {
   return result;
 };
 
+// This is now just a utility function and not used for initial status calculation
 const getStatus = (dueDate: Date): MemberStatus => {
   const now = new Date();
   const sevenDaysFromNow = addDays(new Date(), 7);
@@ -31,7 +32,7 @@ export const members: Member[] = [
   { id: '6', name: 'Anjali Gupta', dueDate: addDays(today, -2), seatingHours: 90, feesPaid: 5500, paymentDate: addDays(today, -32), status: 'Expired', avatarUrl: 'https://placehold.co/40x40.png' },
   { id: '7', name: 'Karan Malhotra', dueDate: addDays(today, 90), seatingHours: 200, feesPaid: 8000, paymentDate: addDays(today, -1), status: 'Active', avatarUrl: 'https://placehold.co/40x40.png' },
   { id: '8', name: 'Sunita Nair', dueDate: addDays(today, 45), seatingHours: 110, feesPaid: 5200, paymentDate: addDays(today, -15), status: 'Active', avatarUrl: 'https://placehold.co/40x40.png' },
-].map(m => ({...m, status: getStatus(m.dueDate)}));
+];
 
 
 export const expenses: Expense[] = [

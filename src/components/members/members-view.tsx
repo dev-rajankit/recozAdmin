@@ -38,14 +38,16 @@ export function MembersView() {
       const response = await fetch('/api/members');
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to fetch members');
+      
       // Recalculate status on the client-side based on current date
       const membersWithStatus = data.map((member: Member) => ({
         ...member,
-        status: getStatus(member.dueDate),
+        status: getStatus(new Date(member.dueDate)),
         dueDate: new Date(member.dueDate),
         paymentDate: new Date(member.paymentDate)
       }));
       setMembers(membersWithStatus);
+
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {
