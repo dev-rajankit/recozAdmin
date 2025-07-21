@@ -1,5 +1,8 @@
 import type { Member, Expense, MemberStatus, ExpenseCategory } from "@/types";
 
+// This file can be used for seeding test data or for type definitions.
+// The main application now fetches live data from MongoDB.
+
 const today = new Date();
 const addDays = (date: Date, days: number): Date => {
   const result = new Date(date);
@@ -46,6 +49,7 @@ export const expenses: Expense[] = [
   { id: '8', type: 'Water', amount: 250, date: new Date('2024-05-25') },
 ];
 
+// financialData is no longer used by the financial view, but could be kept for reference or other parts of the app.
 export const financialData = {
   revenueVsExpenses: [
     { name: 'Jan', revenue: 4000, expenses: 2400 },
