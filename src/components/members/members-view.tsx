@@ -61,7 +61,7 @@ export function MembersView() {
     fetchMembers();
   }, [fetchMembers]);
   
-  const handleAddMember = async (memberData: Omit<Member, 'id' | 'status' | 'avatarUrl' | 'deletedAt'>) => {
+  const handleAddMember = async (memberData: Omit<Member, 'id' | 'status' | 'avatarUrl'>) => {
     try {
       const response = await fetch('/api/members', {
         method: 'POST',
@@ -102,6 +102,7 @@ export function MembersView() {
   const handleDeleteConfirm = async () => {
     if (!memberToDelete) return;
     
+    // Optimistic UI update
     setAllMembers(prev => prev.filter(m => m.id !== memberToDelete));
 
     try {
@@ -111,13 +112,14 @@ export function MembersView() {
 
       const data = await response.json();
       if (!response.ok) {
+        // Revert UI change on failure
+        fetchMembers();
         throw new Error(data.message || 'Failed to delete member');
       }
 
       toast({ title: 'Success', description: 'Member permanently deleted.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
-      fetchMembers();
     } finally {
       setMemberToDelete(null);
     }

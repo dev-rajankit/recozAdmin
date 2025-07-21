@@ -120,7 +120,7 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="isSeatReserved" className="text-right">Reserved</Label>
-                <Switch id="isSeatReserved" checked={isSeatReserved} onCheckedChange={setIsSeatReserved} className="col-span-3" />
+                <Switch id="isSeatReserved" checked={isSeatReserved} onCheckedChange={setIsSeatReserved} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="dueDate" className="text-right">Due Date</Label>
