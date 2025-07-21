@@ -23,14 +23,15 @@ export async function GET(req: Request) {
 
   try {
     const query = includeDeleted ? { deletedAt: { $ne: null } } : { deletedAt: null };
+    
     const members = await MemberModel.find(query);
     
-    // Status update logic only for active members
     if (!includeDeleted) {
       for (const member of members) {
         const newStatus = getStatus(member.dueDate);
         if (newStatus !== member.status) {
-          await MemberModel.findByIdAndUpdate(member._id, {status: newStatus});
+          member.status = newStatus;
+          await member.save();
         }
       }
     }
