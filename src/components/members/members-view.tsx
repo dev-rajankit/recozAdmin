@@ -36,7 +36,7 @@ export function MembersView() {
   const [memberToRestore, setMemberToRestore] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const getStatus = (dueDate: Date): MemberStatus => {
+  const getStatus = useCallback((dueDate: Date): MemberStatus => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const due = new Date(dueDate);
@@ -48,45 +48,46 @@ export function MembersView() {
     if (due < now) return 'Expired';
     if (due <= sevenDaysFromNow) return 'Expiring Soon';
     return 'Active';
-  };
+  }, []);
 
 
   const fetchMembers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [activeMembersRes, deletedMembersRes] = await Promise.all([
+      const [activeRes, deletedRes] = await Promise.all([
         fetch('/api/members'),
         fetch('/api/members?includeDeleted=true')
       ]);
 
-      if (!activeMembersRes.ok || !deletedMembersRes.ok) {
+      if (!activeRes.ok || !deletedRes.ok) {
         throw new Error('Failed to fetch members');
       }
       
-      const activeMembersData = await activeMembersRes.json();
-      const deletedMembersData = await deletedMembersRes.json();
+      const activeData = await activeRes.json();
+      const deletedData = await deletedRes.json();
 
-      const membersWithStatus = activeMembersData.map((member: any) => ({
+      const activeMembersWithStatus = activeData.map((member: any) => ({
         ...member,
         status: getStatus(new Date(member.dueDate)),
         dueDate: new Date(member.dueDate),
         paymentDate: new Date(member.paymentDate)
       }));
-       const deletedWithDates = deletedMembersData.map((member: any) => ({
+       const deletedMembersWithDates = deletedData.map((member: any) => ({
         ...member,
         dueDate: new Date(member.dueDate),
         paymentDate: new Date(member.paymentDate),
         deletedAt: new Date(member.deletedAt)
       }));
-      setMembers(membersWithStatus);
-      setDeletedMembers(deletedWithDates);
+
+      setMembers(activeMembersWithStatus);
+      setDeletedMembers(deletedMembersWithDates);
 
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, getStatus]);
 
   useEffect(() => {
     fetchMembers();
