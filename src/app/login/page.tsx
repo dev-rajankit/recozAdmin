@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import {
@@ -20,8 +20,24 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showSignup, setShowSignup] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    const checkUserExists = async () => {
+      try {
+        const response = await fetch('/api/auth/user-exists');
+        const data = await response.json();
+        setShowSignup(!data.userExists);
+      } catch (err) {
+        console.error("Failed to check if user exists:", err);
+        // Default to not showing signup link on error for security
+        setShowSignup(false);
+      }
+    };
+    checkUserExists();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +93,14 @@ export default function LoginPage() {
               </Button>
             </div>
           </form>
+           {showSignup && (
+            <div className="mt-4 text-center text-sm">
+              No account?{" "}
+              <Link href="/signup" className="underline">
+                Sign up
+              </Link>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
