@@ -13,12 +13,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Bell, LogOut, Settings, User } from "lucide-react";
 import { SidebarTrigger } from "../ui/sidebar";
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   title: string;
 }
 
 export function Header({ title }: HeaderProps) {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  }
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6 lg:px-8">
       <div className="flex items-center gap-4">
@@ -42,7 +52,7 @@ export function Header({ title }: HeaderProps) {
           <DropdownMenuContent className="w-56" align="end">
             <DropdownMenuLabel>
               <p className="font-medium">Admin User</p>
-              <p className="text-xs text-muted-foreground">admin@coworkcentral.com</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
@@ -54,7 +64,7 @@ export function Header({ title }: HeaderProps) {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>

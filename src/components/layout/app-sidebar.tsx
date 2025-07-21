@@ -20,9 +20,12 @@ import {
   Settings,
   LogOut,
   Building,
+  User,
 } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
 
-type Section = "dashboard" | "members" | "expenses" | "reports" | "settings";
+type Section = "dashboard" | "members" | "expenses" | "reports" | "account" | "settings";
 
 interface AppSidebarProps {
   activeSection: Section;
@@ -34,10 +37,22 @@ const navItems = [
   { id: "members", label: "Members", icon: Users },
   { id: "expenses", label: "Expenses", icon: CreditCard },
   { id: "reports", label: "Reports", icon: BarChart2 },
-  { id: "settings", label: "Settings", icon: Settings },
+] as const;
+
+const settingsItems = [
+    { id: "account", label: "My Account", icon: User },
+    { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps) {
+  const { logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  }
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -71,8 +86,20 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
       <Separator />
       <SidebarFooter>
         <SidebarMenu>
+          {settingsItems.map((item) => (
+             <SidebarMenuItem key={item.id}>
+              <SidebarMenuButton
+                onClick={() => setActiveSection(item.id)}
+                isActive={activeSection === item.id}
+                tooltip={item.label}
+              >
+                <item.icon />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Logout">
+            <SidebarMenuButton tooltip="Logout" onClick={handleLogout}>
               <LogOut />
               <span>Logout</span>
             </SidebarMenuButton>
