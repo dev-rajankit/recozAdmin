@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
@@ -25,7 +26,8 @@ import { MemberDetailsDialog } from "./member-details-dialog";
 type TabValue = "all" | "active" | "expiring" | "expired" | "deleted";
 
 export function MembersView() {
-  const [allMembers, setAllMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [deletedMembers, setDeletedMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabValue>("all");
   
@@ -41,26 +43,36 @@ export function MembersView() {
   
   const { toast } = useToast();
 
-  const fetchAllMembers = useCallback(async () => {
+  const fetchActiveMembers = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/members');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch members: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error('Failed to fetch active members');
       const data = await response.json();
-      setAllMembers(data);
+      setMembers(data);
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error fetching members', description: error.message });
-      setAllMembers([]);
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
 
+  const fetchDeletedMembers = useCallback(async () => {
+    // No need to set loading here, as it's a background fetch
+    try {
+      const response = await fetch('/api/members?includeDeleted=true');
+      if (!response.ok) throw new Error('Failed to fetch deleted members');
+      const data = await response.json();
+      setDeletedMembers(data);
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
+  }, [toast]);
+
   useEffect(() => {
-    fetchAllMembers();
-  }, [fetchAllMembers]);
+    fetchActiveMembers();
+    fetchDeletedMembers();
+  }, [fetchActiveMembers, fetchDeletedMembers]);
   
   const handleAddMember = async (memberData: Omit<Member, 'id' | 'status' | 'avatarUrl'>) => {
     try {
@@ -72,7 +84,7 @@ export function MembersView() {
       const newMember = await response.json();
       if (!response.ok) throw new Error(newMember.message || 'Failed to add member');
       
-      setAllMembers(prev => [...prev, newMember]);
+      setMembers(prev => [...prev, newMember]);
       toast({ title: 'Success', description: 'Member added successfully.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error adding member', description: error.message });
@@ -89,7 +101,7 @@ export function MembersView() {
       const updatedMemberFromServer = await response.json();
       if (!response.ok) throw new Error(updatedMemberFromServer.message || 'Failed to update member');
       
-      setAllMembers(prev => prev.map(m => m.id === updatedMemberFromServer.id ? updatedMemberFromServer : m));
+      setMembers(prev => prev.map(m => m.id === updatedMemberFromServer.id ? updatedMemberFromServer : m));
       
       toast({ title: 'Success', description: 'Member updated successfully.' });
       
@@ -105,47 +117,42 @@ export function MembersView() {
     if(!memberToDelete) return;
     const { id, permanent } = memberToDelete;
     
-    const originalMembers = [...allMembers];
-
-    // Optimistic UI update
-    setAllMembers(prev => {
-      if (permanent) {
-        return prev.filter(m => m.id !== id);
-      } else {
-        return prev.map(m => m.id === id ? { ...m, deletedAt: new Date() } : m);
-      }
-    });
-    setMemberToDelete(null);
-
     try {
       const url = permanent ? `/api/members/${id}?permanent=true` : `/api/members/${id}`;
       const response = await fetch(url, { method: 'DELETE' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to delete member');
+      
       toast({ title: 'Success', description: data.message });
+
+      // Refetch both lists to ensure UI is perfectly in sync with DB
+      fetchActiveMembers();
+      fetchDeletedMembers();
+
     } catch (error: any) {
-      setAllMembers(originalMembers); // Revert on error
       toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
+    } finally {
+      setMemberToDelete(null);
     }
   };
 
   const handleRestoreConfirm = async () => {
     if (!memberToRestore) return;
-    
-    const originalMembers = [...allMembers];
-    
-    // Optimistic UI Update
-    setAllMembers(prev => prev.map(m => m.id === memberToRestore ? { ...m, deletedAt: null } : m));
-    setMemberToRestore(null);
 
     try {
       const response = await fetch(`/api/members/${memberToRestore}/restore`, { method: 'PUT' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to restore member');
       toast({ title: 'Success', description: 'Member restored successfully.' });
+      
+      // Refetch both lists
+      fetchActiveMembers();
+      fetchDeletedMembers();
+
     } catch (error: any) {
-      setAllMembers(originalMembers); // Revert on error
       toast({ variant: 'destructive', title: 'Error restoring member', description: error.message });
+    } finally {
+        setMemberToRestore(null);
     }
   };
   
@@ -165,26 +172,24 @@ export function MembersView() {
   }
 
   const filteredMembers = useMemo(() => {
-    const activeMembers = allMembers.filter(m => !m.deletedAt);
-    
     let listToFilter: Member[];
 
     switch(activeTab) {
         case 'active':
-            listToFilter = activeMembers.filter(m => m.status === 'Active');
+            listToFilter = members.filter(m => m.status === 'Active');
             break;
         case 'expiring':
-            listToFilter = activeMembers.filter(m => m.status === 'Expiring Soon');
+            listToFilter = members.filter(m => m.status === 'Expiring Soon');
             break;
         case 'expired':
-            listToFilter = activeMembers.filter(m => m.status === 'Expired');
+            listToFilter = members.filter(m => m.status === 'Expired');
             break;
         case 'deleted':
-            listToFilter = allMembers.filter(m => !!m.deletedAt);
+            listToFilter = deletedMembers;
             break;
         case 'all':
         default:
-            listToFilter = activeMembers;
+            listToFilter = members;
             break;
     }
 
@@ -197,7 +202,7 @@ export function MembersView() {
       member.phone.includes(searchQuery) ||
       (member.seatNumber && member.seatNumber.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-  }, [allMembers, activeTab, searchQuery]);
+  }, [members, deletedMembers, activeTab, searchQuery]);
 
   const renderTable = () => {
     if (activeTab === 'deleted') {

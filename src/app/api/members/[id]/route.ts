@@ -43,8 +43,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     if (!updatedMember) {
       return NextResponse.json({ message: 'Member not found' }, { status: 404 });
     }
-
-    return NextResponse.json(updatedMember, { status: 200 });
+    
+    const sanitizedMember = {
+        ...updatedMember.toObject(),
+        id: updatedMember._id.toString(),
+    }
+    return NextResponse.json(sanitizedMember, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 400 });
   }
