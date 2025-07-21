@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -24,6 +25,7 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
       await signup(email, password);
       router.push('/dashboard');
@@ -36,9 +38,9 @@ export default function SignupPage() {
     <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="mx-auto max-w-sm">
         <CardHeader>
-          <CardTitle className="text-xl">Sign Up</CardTitle>
+          <CardTitle className="text-xl">Admin Sign Up</CardTitle>
           <CardDescription>
-            Enter your information to create an account
+            Create the first and only administrator account.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -67,7 +69,7 @@ export default function SignupPage() {
               </div>
               {error && <p className="text-destructive text-sm">{error}</p>}
               <Button type="submit" className="w-full">
-                Create an account
+                Create Admin Account
               </Button>
             </div>
           </form>
