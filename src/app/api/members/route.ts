@@ -1,29 +1,56 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import MemberModel from '@/models/member';
-import { MemberStatus } from '@/types';
+import type { MemberStatus } from '@/types';
+import { addDays, startOfDay } from 'date-fns';
 
 const getStatus = (dueDate: Date): MemberStatus => {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const due = new Date(dueDate);
-  due.setHours(0, 0, 0, 0);
-  const sevenDaysFromNow = new Date(now);
-  sevenDaysFromNow.setDate(now.getDate() + 7);
+  const now = startOfDay(new Date());
+  const due = startOfDay(new Date(dueDate));
+  const sevenDaysFromNow = addDays(now, 7);
 
   if (due < now) return 'Expired';
   if (due <= sevenDaysFromNow) return 'Expiring Soon';
   return 'Active';
 };
 
-
 export async function GET(req: Request) {
   await dbConnect();
   try {
     const { searchParams } = new URL(req.url);
-    const includeDeleted = searchParams.get('includeDeleted') === 'true';
+    const tab = searchParams.get('tab') || 'all';
+    
+    // First, update statuses for all active members
+    const activeMembers = await MemberModel.find({ deletedAt: null });
+    for (const member of activeMembers) {
+        const newStatus = getStatus(member.dueDate);
+        if (newStatus !== member.status) {
+            await MemberModel.findByIdAndUpdate(member._id, { status: newStatus });
+        }
+    }
 
-    const query = includeDeleted ? { deletedAt: { $ne: null } } : { deletedAt: null };
+    let query = {};
+    const now = startOfDay(new Date());
+    const sevenDaysFromNow = addDays(now, 7);
+
+    switch (tab) {
+        case 'active':
+            query = { deletedAt: null, status: 'Active' };
+            break;
+        case 'expiring':
+            query = { deletedAt: null, status: 'Expiring Soon' };
+            break;
+        case 'expired':
+            query = { deletedAt: null, status: 'Expired' };
+            break;
+        case 'deleted':
+            query = { deletedAt: { $ne: null } };
+            break;
+        case 'all':
+        default:
+            query = { deletedAt: null };
+            break;
+    }
     
     const members = await MemberModel.find(query);
     

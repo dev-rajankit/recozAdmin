@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
@@ -8,7 +7,7 @@ import { PlusCircle, Search } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { MembersTable } from "./members-table";
 import { AddMemberDialog } from "./add-member-dialog";
-import { Member, MemberStatus } from "@/types";
+import { Member } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -23,66 +22,51 @@ import {
 import { DeletedMembersTable } from "./deleted-members-table";
 import { MemberDetailsDialog } from "./member-details-dialog";
 
+type TabValue = "all" | "active" | "expiring" | "expired" | "deleted";
+
 export function MembersView() {
   const [members, setMembers] = useState<Member[]>([]);
-  const [deletedMembers, setDeletedMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<TabValue>("all");
+  
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
   const [memberToDelete, setMemberToDelete] = useState<{id: string, permanent: boolean} | null>(null);
   const [memberToRestore, setMemberToRestore] = useState<string | null>(null);
   const { toast } = useToast();
-  
-  const getStatus = useCallback((dueDate: Date): MemberStatus => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const due = new Date(dueDate);
-    due.setHours(0, 0, 0, 0);
 
-    const sevenDaysFromNow = new Date(now);
-    sevenDaysFromNow.setDate(now.getDate() + 7);
-
-    if (due < now) return 'Expired';
-    if (due <= sevenDaysFromNow) return 'Expiring Soon';
-    return 'Active';
-  }, []);
-
-
-  const fetchMembers = useCallback(async () => {
+  const fetchMembers = useCallback(async (tab: TabValue) => {
     setIsLoading(true);
     try {
-      const [activeRes, deletedRes] = await Promise.all([
-        fetch('/api/members'),
-        fetch('/api/members?includeDeleted=true')
-      ]);
-
-      if (!activeRes.ok) {
-        throw new Error(`Failed to fetch active members: ${activeRes.statusText}`);
+      const response = await fetch(`/api/members?tab=${tab}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch members: ${response.statusText}`);
       }
-      if (!deletedRes.ok) {
-        throw new Error(`Failed to fetch deleted members: ${deletedRes.statusText}`);
-      }
-      
-      const activeData = await activeRes.json();
-      const deletedData = await deletedRes.json();
-      
-      setMembers(activeData.map((m: any) => ({...m, status: getStatus(new Date(m.dueDate))})));
-      setDeletedMembers(deletedData);
-
+      const data = await response.json();
+      setMembers(data);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error fetching members', description: error.message });
+      setMembers([]); // Clear members on error
     } finally {
       setIsLoading(false);
     }
-  }, [toast, getStatus]);
-
+  }, [toast]);
 
   useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+    fetchMembers(activeTab);
+  }, [activeTab, fetchMembers]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as TabValue);
+  };
+
+  const refreshCurrentTabData = () => {
+    fetchMembers(activeTab);
+  }
 
   const handleAddMember = async (memberData: Omit<Member, 'id' | 'status' | 'avatarUrl'>) => {
     try {
@@ -94,7 +78,7 @@ export function MembersView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to add member');
       toast({ title: 'Success', description: 'Member added successfully.' });
-      fetchMembers();
+      refreshCurrentTabData();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error adding member', description: error.message });
     }
@@ -110,17 +94,11 @@ export function MembersView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to update member');
       toast({ title: 'Success', description: 'Member updated successfully.' });
-      
-      await fetchMembers();
+      refreshCurrentTabData();
       
       if (viewingMember?.id === updatedMemberData.id) {
-        setViewingMember({
-            ...data, 
-            id: data._id, 
-            status: getStatus(new Date(data.dueDate))
-        });
+        setViewingMember({ ...data, id: data._id });
       }
-
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error updating member', description: error.message });
     }
@@ -132,16 +110,11 @@ export function MembersView() {
     
     try {
       const url = permanent ? `/api/members/${id}?permanent=true` : `/api/members/${id}`;
-      const response = await fetch(url, {
-        method: 'DELETE',
-      });
-       const data = await response.json();
-      if (!response.ok) {
-        toast({ variant: 'destructive', title: 'Error deleting member', description: data.message || 'Failed to delete member' });
-      } else {
-        toast({ title: 'Success', description: data.message });
-        fetchMembers(); // Re-fetch all data to ensure consistency
-      }
+      const response = await fetch(url, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to delete member');
+      toast({ title: 'Success', description: data.message });
+      refreshCurrentTabData();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
     } finally {
@@ -151,18 +124,12 @@ export function MembersView() {
 
   const handleRestoreConfirm = async () => {
     if (!memberToRestore) return;
-
     try {
-      const response = await fetch(`/api/members/${memberToRestore}/restore`, {
-        method: 'PUT'
-      });
+      const response = await fetch(`/api/members/${memberToRestore}/restore`, { method: 'PUT' });
       const data = await response.json();
-      if (!response.ok) {
-        toast({ variant: 'destructive', title: 'Error restoring member', description: data.message });
-      } else {
-        toast({ title: 'Success', description: 'Member restored successfully.' });
-        fetchMembers(); // Re-fetch all data
-      }
+      if (!response.ok) throw new Error(data.message || 'Failed to restore member');
+      toast({ title: 'Success', description: 'Member restored successfully.' });
+      refreshCurrentTabData();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error restoring member', description: error.message });
     } finally {
@@ -186,21 +153,33 @@ export function MembersView() {
   }
 
   const filteredMembers = useMemo(() => {
-    if (!members) return [];
     return members.filter((member) =>
-      member.name.toLowerCase().includes(searchQuery.toLowerCase())
+      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.phone.includes(searchQuery) ||
+      (member.seatNumber && member.seatNumber.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [members, searchQuery]);
 
-  const filteredDeletedMembers = useMemo(() => {
-    if (!deletedMembers) return [];
-    return deletedMembers.filter((member) =>
-      member.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const renderTable = () => {
+    if (activeTab === 'deleted') {
+      return (
+        <DeletedMembersTable 
+          members={filteredMembers}
+          onRestore={setMemberToRestore}
+          onPermanentDelete={(id) => setMemberToDelete({id, permanent: true})}
+          isLoading={isLoading}
+        />
+      );
+    }
+    return (
+      <MembersTable 
+        members={filteredMembers} 
+        onEdit={openEditDialog} 
+        onDelete={(id) => setMemberToDelete({id, permanent: false})} 
+        onViewDetails={openDetailsDialog} 
+        isLoading={isLoading} 
+      />
     );
-  }, [deletedMembers, searchQuery]);
-
-  const getMembersByStatus = (status: MemberStatus) => {
-    return filteredMembers.filter((member) => member.status === status);
   };
 
   return (
@@ -210,7 +189,7 @@ export function MembersView() {
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search members..."
+              placeholder="Search name, phone, seat..."
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -222,7 +201,7 @@ export function MembersView() {
           </Button>
         </div>
 
-        <Tabs defaultValue="all" className="w-full">
+        <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList>
             <TabsTrigger value="all">All Members</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
@@ -230,26 +209,9 @@ export function MembersView() {
             <TabsTrigger value="expired">Expired</TabsTrigger>
             <TabsTrigger value="deleted">Deleted</TabsTrigger>
           </TabsList>
-          <TabsContent value="all" className="mt-4">
-            <MembersTable members={filteredMembers} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} onViewDetails={openDetailsDialog} isLoading={isLoading} />
-          </TabsContent>
-          <TabsContent value="active" className="mt-4">
-            <MembersTable members={getMembersByStatus("Active")} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} onViewDetails={openDetailsDialog} isLoading={isLoading} />
-          </TabsContent>
-          <TabsContent value="expiring" className="mt-4">
-            <MembersTable members={getMembersByStatus("Expiring Soon")} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} onViewDetails={openDetailsDialog} isLoading={isLoading} />
-          </TabsContent>
-          <TabsContent value="expired" className="mt-4">
-            <MembersTable members={getMembersByStatus("Expired")} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} onViewDetails={openDetailsDialog} isLoading={isLoading} />
-          </TabsContent>
-          <TabsContent value="deleted" className="mt-4">
-            <DeletedMembersTable 
-              members={filteredDeletedMembers}
-              onRestore={setMemberToRestore}
-              onPermanentDelete={(id) => setMemberToDelete({id, permanent: true})}
-              isLoading={isLoading}
-            />
-          </TabsContent>
+          <div className="mt-4">
+            {renderTable()}
+          </div>
         </Tabs>
         
         <AddMemberDialog
@@ -266,7 +228,6 @@ export function MembersView() {
           member={viewingMember}
           onEdit={openEditDialog}
         />
-
       </div>
 
       <AlertDialog open={!!memberToDelete} onOpenChange={(open) => !open && setMemberToDelete(null)}>

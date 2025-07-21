@@ -33,7 +33,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         seatingHours,
         feesPaid,
         paymentDate: new Date(paymentDate),
-        status, // Correctly set the updated status
+        status,
         seatNumber,
         isSeatReserved,
     };
