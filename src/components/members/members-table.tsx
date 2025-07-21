@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Member, MemberStatus } from "@/types";
 import { format } from "date-fns";
 import { MembersTableRowActions } from "./members-table-row-actions";
+import { Card } from "@/components/ui/card";
 
 interface MembersTableProps {
   members: Member[];
@@ -54,7 +55,7 @@ export function MembersTable({ members, onEdit, onDelete }: MembersTableProps) {
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={member.avatarUrl} alt={member.name} />
+                      <AvatarImage src={member.avatarUrl} alt={member.name} data-ai-hint="person avatar"/>
                       <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <span className="font-medium">{member.name}</span>

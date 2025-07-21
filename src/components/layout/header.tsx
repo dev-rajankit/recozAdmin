@@ -34,7 +34,7 @@ export function Header({ title }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://placehold.co/40x40.png" alt="Admin" />
+                <AvatarImage src="https://placehold.co/40x40.png" alt="Admin" data-ai-hint="person avatar"/>
                 <AvatarFallback>AD</AvatarFallback>
               </Avatar>
             </Button>

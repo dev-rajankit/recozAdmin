@@ -139,7 +139,7 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-            <Button type="submit">{member ? "Save Changes" : "Save Member"}</Button>
+            <Button type="submit">{member ? "Save Changes" : "Add Member"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
