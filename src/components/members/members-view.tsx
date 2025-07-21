@@ -130,16 +130,6 @@ export function MembersView() {
     if(!memberToDelete) return;
     const { id, permanent } = memberToDelete;
     
-    // Optimistic UI update
-    const memberToMove = members.find(m => m.id === id);
-    if (memberToMove && !permanent) {
-        setMembers(prev => prev.filter(m => m.id !== id));
-        setDeletedMembers(prev => [...prev, { ...memberToMove, deletedAt: new Date() }]);
-    }
-    if (permanent) {
-        setDeletedMembers(prev => prev.filter(m => m.id !== id));
-    }
-
     try {
       const url = permanent ? `/api/members/${id}?permanent=true` : `/api/members/${id}`;
       const response = await fetch(url, {
@@ -147,20 +137,13 @@ export function MembersView() {
       });
        const data = await response.json();
       if (!response.ok) {
-        // Revert UI on failure
         toast({ variant: 'destructive', title: 'Error deleting member', description: data.message || 'Failed to delete member' });
-        fetchMembers(); // Re-fetch to get correct state
       } else {
         toast({ title: 'Success', description: data.message });
-        // No need to call fetchMembers() on success for soft-delete, as UI is already updated.
-        if (permanent) {
-            fetchMembers(); // Re-fetch only on permanent delete
-        }
+        fetchMembers(); // Re-fetch all data to ensure consistency
       }
     } catch (error: any) {
-      // Revert UI on failure
       toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
-      fetchMembers(); // Re-fetch to get correct state
     } finally {
       setMemberToDelete(null);
     }
@@ -169,14 +152,6 @@ export function MembersView() {
   const handleRestoreConfirm = async () => {
     if (!memberToRestore) return;
 
-    // Optimistic UI Update
-    const memberToMove = deletedMembers.find(m => m.id === memberToRestore);
-    if (memberToMove) {
-        setDeletedMembers(prev => prev.filter(m => m.id !== memberToRestore));
-        const restoredMember = { ...memberToMove, deletedAt: null, status: getStatus(new Date(memberToMove.dueDate)) };
-        setMembers(prev => [...prev, restoredMember]);
-    }
-
     try {
       const response = await fetch(`/api/members/${memberToRestore}/restore`, {
         method: 'PUT'
@@ -184,14 +159,12 @@ export function MembersView() {
       const data = await response.json();
       if (!response.ok) {
         toast({ variant: 'destructive', title: 'Error restoring member', description: data.message });
-        fetchMembers(); // Revert
       } else {
         toast({ title: 'Success', description: 'Member restored successfully.' });
-        // No need to fetch on success
+        fetchMembers(); // Re-fetch all data
       }
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error restoring member', description: error.message });
-      fetchMembers(); // Revert
     } finally {
       setMemberToRestore(null);
     }
