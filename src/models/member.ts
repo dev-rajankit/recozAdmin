@@ -14,6 +14,7 @@ export interface IMember extends Document {
   avatarUrl: string;
   seatNumber: string;
   isSeatReserved: boolean;
+  deletedAt?: Date | null;
 }
 
 const MemberSchema: Schema<IMember> = new Schema({
@@ -28,8 +29,15 @@ const MemberSchema: Schema<IMember> = new Schema({
   avatarUrl: { type: String, required: true },
   seatNumber: { type: String, default: '' },
   isSeatReserved: { type: Boolean, default: false },
-});
+  deletedAt: { type: Date, default: null },
+}, { timestamps: true });
 
-const MemberModel: Model<IMember> = mongoose.models.Member || mongoose.model<IMember>('Member', MemberSchema);
+
+// This is the key change to force model re-compilation in development
+if (mongoose.models.Member) {
+  delete mongoose.models.Member;
+}
+
+const MemberModel: Model<IMember> = mongoose.model<IMember>('Member', MemberSchema);
 
 export default MemberModel;

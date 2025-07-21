@@ -16,21 +16,33 @@ const getStatus = (dueDate: Date): MemberStatus => {
   return 'Active';
 };
 
-export async function GET() {
+export async function GET(req: Request) {
   await dbConnect();
 
   try {
-    const members = await MemberModel.find({});
+    const { searchParams } = new URL(req.url);
+    const filter = searchParams.get('filter');
+
+    let query: any = { deletedAt: null };
+
+    if (filter === 'deleted') {
+       query = { deletedAt: { $ne: null } };
+    }
     
-    for (const member of members) {
-      const newStatus = getStatus(member.dueDate);
-      if (newStatus !== member.status) {
-        member.status = newStatus;
-        await member.save();
+    const members = await MemberModel.find(query).sort({ name: 1 });
+    
+    // Update status on the fly for active members
+    if (filter !== 'deleted') {
+      for (const member of members) {
+        const newStatus = getStatus(member.dueDate);
+        if (newStatus !== member.status) {
+          member.status = newStatus;
+          await member.save();
+        }
       }
     }
     
-    const refreshedMembers = await MemberModel.find({}).sort({ name: 1 });
+    const refreshedMembers = await MemberModel.find(query).sort({ name: 1 });
 
     const sanitizedMembers = refreshedMembers.map(member => ({
       ...member.toObject(),
@@ -38,6 +50,7 @@ export async function GET() {
     }));
     return NextResponse.json(sanitizedMembers, {status: 200});
   } catch (error) {
+    console.error('API Error fetching members:', error);
     return NextResponse.json({message: 'Server Error'}, {status: 500});
   }
 }
