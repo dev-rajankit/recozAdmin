@@ -22,6 +22,8 @@ export async function GET() {
   try {
     const members = await MemberModel.find({});
     
+    // This status update logic can be run as a cron job in a real-world scenario
+    // For now, it runs on every fetch.
     for (const member of members) {
       const newStatus = getStatus(member.dueDate);
       if (newStatus !== member.status) {
@@ -30,7 +32,7 @@ export async function GET() {
       }
     }
     
-    const refreshedMembers = await MemberModel.find({});
+    const refreshedMembers = await MemberModel.find({}).sort({ name: 1 });
 
     const sanitizedMembers = refreshedMembers.map(member => ({
       ...member.toObject(),

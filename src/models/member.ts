@@ -25,7 +25,7 @@ const MemberSchema: Schema<IMember> = new Schema({
   paymentDate: { type: Date, required: true },
   status: { type: String, required: true, enum: ['Active', 'Expiring Soon', 'Expired'] },
   avatarUrl: { type: String, required: true },
-  seatNumber: { type: String },
+  seatNumber: { type: String, default: '' },
   isSeatReserved: { type: Boolean, default: false },
 });
 

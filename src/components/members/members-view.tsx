@@ -25,7 +25,7 @@ import { MemberDetailsDialog } from "./member-details-dialog";
 type TabValue = "all" | "active" | "expiring" | "expired";
 
 export function MembersView() {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabValue>("all");
   
@@ -49,7 +49,7 @@ export function MembersView() {
         throw new Error('Failed to fetch member data');
       }
       const data = await response.json();
-      setMembers(data);
+      setAllMembers(data);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {
@@ -102,9 +102,8 @@ export function MembersView() {
   const handleDeleteConfirm = async () => {
     if (!memberToDelete) return;
     
-    const originalMembers = [...members];
     // Optimistic UI update
-    setMembers(prev => prev.filter(m => m.id !== memberToDelete));
+    setAllMembers(prev => prev.filter(m => m.id !== memberToDelete));
 
     try {
       const response = await fetch(`/api/members/${memberToDelete}`, {
@@ -117,12 +116,13 @@ export function MembersView() {
       }
 
       toast({ title: 'Success', description: 'Member permanently deleted.' });
-      // The fetchMembers call will ensure consistency
-      await fetchMembers();
+      // We don't need to re-fetch because of optimistic update,
+      // but a re-fetch can be done here to ensure consistency if needed.
+      // await fetchMembers(); 
     } catch (error: any) {
       // Revert UI on error
-      setMembers(originalMembers);
       toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
+      fetchMembers(); // Re-fetch to get the correct state from the server
     } finally {
       setMemberToDelete(null);
     }
@@ -144,21 +144,21 @@ export function MembersView() {
   }
 
   const filteredMembers = useMemo(() => {
-    let listToFilter: Member[];
+    let listToFilter = allMembers;
 
     switch(activeTab) {
         case 'active':
-            listToFilter = members.filter(m => m.status === 'Active');
+            listToFilter = allMembers.filter(m => m.status === 'Active');
             break;
         case 'expiring':
-            listToFilter = members.filter(m => m.status === 'Expiring Soon');
+            listToFilter = allMembers.filter(m => m.status === 'Expiring Soon');
             break;
         case 'expired':
-            listToFilter = members.filter(m => m.status === 'Expired');
+            listToFilter = allMembers.filter(m => m.status === 'Expired');
             break;
         case 'all':
         default:
-            listToFilter = members;
+            // listToFilter is already allMembers
             break;
     }
 
@@ -171,7 +171,7 @@ export function MembersView() {
       member.phone.includes(searchQuery) ||
       (member.seatNumber && member.seatNumber.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-  }, [members, activeTab, searchQuery]);
+  }, [allMembers, activeTab, searchQuery]);
 
   return (
     <>
