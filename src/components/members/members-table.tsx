@@ -46,6 +46,7 @@ export function MembersTable({ members, onEdit, onDelete, onViewDetails, isLoadi
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead>Seat</TableHead>
               <TableHead>Due Date</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -57,6 +58,7 @@ export function MembersTable({ members, onEdit, onDelete, onViewDetails, isLoadi
                 <TableRow key={index}>
                   <TableCell><Skeleton className="h-10 w-48" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
                   <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
@@ -75,6 +77,15 @@ export function MembersTable({ members, onEdit, onDelete, onViewDetails, isLoadi
                     </div>
                   </TableCell>
                   <TableCell>{member.phone}</TableCell>
+                  <TableCell>
+                    {member.seatNumber ? (
+                      <Badge variant={member.isSeatReserved ? "default" : "secondary"}>
+                        {member.seatNumber}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">N/A</span>
+                    )}
+                  </TableCell>
                   <TableCell>{format(new Date(member.dueDate), "MMM dd, yyyy")}</TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[member.status]} className={`capitalize ${statusColor[member.status]}`}>
@@ -88,7 +99,7 @@ export function MembersTable({ members, onEdit, onDelete, onViewDetails, isLoadi
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No members found.
                 </TableCell>
               </TableRow>

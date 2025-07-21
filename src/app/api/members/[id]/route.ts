@@ -21,7 +21,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const { id } = params;
   try {
     const body = await req.json();
-    const { name, phone, aadharNumber, dueDate, seatingHours, feesPaid, paymentDate } = body;
+    const { name, phone, aadharNumber, dueDate, seatingHours, feesPaid, paymentDate, seatNumber, isSeatReserved } = body;
 
     const status = getStatus(new Date(dueDate));
     
@@ -34,6 +34,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         feesPaid,
         paymentDate: new Date(paymentDate),
         status,
+        seatNumber,
+        isSeatReserved,
     };
 
     const updatedMember = await MemberModel.findByIdAndUpdate(id, updatedData, { new: true });

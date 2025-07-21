@@ -12,6 +12,8 @@ export interface IMember extends Document {
   status: MemberStatus;
   avatarUrl: string;
   deletedAt?: Date | null;
+  seatNumber?: string;
+  isSeatReserved?: boolean;
 }
 
 const MemberSchema: Schema<IMember> = new Schema({
@@ -25,6 +27,8 @@ const MemberSchema: Schema<IMember> = new Schema({
   status: { type: String, required: true, enum: ['Active', 'Expiring Soon', 'Expired'] },
   avatarUrl: { type: String, required: true },
   deletedAt: { type: Date, default: null },
+  seatNumber: { type: String },
+  isSeatReserved: { type: Boolean, default: false },
 });
 
 const MemberModel: Model<IMember> = mongoose.models.Member || mongoose.model<IMember>('Member', MemberSchema);

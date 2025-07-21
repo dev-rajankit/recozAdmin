@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Member, MemberStatus } from "@/types";
 import { format } from "date-fns";
-import { Pencil, MessageSquare, Phone } from "lucide-react";
+import { Pencil, MessageSquare, Phone, CheckCircle, XCircle } from "lucide-react";
 
 interface MemberDetailsDialogProps {
   isOpen: boolean;
@@ -74,6 +74,17 @@ export function MemberDetailsDialog({ isOpen, setIsOpen, member, onEdit }: Membe
                  <div>
                     <p className="text-muted-foreground">Aadhar Number</p>
                     <p>{member.aadharNumber || "N/A"}</p>
+                </div>
+                <div>
+                    <p className="text-muted-foreground">Seat Number</p>
+                    <p>{member.seatNumber || "N/A"}</p>
+                </div>
+                <div>
+                    <p className="text-muted-foreground">Seat Reserved</p>
+                     <div className="flex items-center gap-1">
+                       {member.isSeatReserved ? <CheckCircle className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                       <span>{member.isSeatReserved ? "Yes" : "No"}</span>
+                    </div>
                 </div>
                  <div>
                     <p className="text-muted-foreground">Due Date</p>

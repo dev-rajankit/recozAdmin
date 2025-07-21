@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Switch } from "@/components/ui/switch";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,8 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
   const [seatingHours, setSeatingHours] = useState("");
   const [feesPaid, setFeesPaid] = useState("");
   const [paymentDate, setPaymentDate] = useState<Date | undefined>();
+  const [seatNumber, setSeatNumber] = useState("");
+  const [isSeatReserved, setIsSeatReserved] = useState(false);
 
   useEffect(() => {
     if (member) {
@@ -45,6 +48,8 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
       setSeatingHours(member.seatingHours.toString());
       setFeesPaid(member.feesPaid.toString());
       setPaymentDate(member.paymentDate);
+      setSeatNumber(member.seatNumber || "");
+      setIsSeatReserved(member.isSeatReserved || false);
     } else {
       setName("");
       setPhone("");
@@ -53,6 +58,8 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
       setSeatingHours("");
       setFeesPaid("");
       setPaymentDate(undefined);
+      setSeatNumber("");
+      setIsSeatReserved(false);
     }
   }, [member, isOpen]);
 
@@ -71,6 +78,8 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
       seatingHours: parseInt(seatingHours, 10),
       feesPaid: parseInt(feesPaid, 10),
       paymentDate,
+      seatNumber,
+      isSeatReserved,
     };
 
     if (member) {
@@ -83,7 +92,7 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{member ? "Edit Member" : "Add New Member"}</DialogTitle>
           <DialogDescription>
@@ -91,7 +100,7 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" required />
@@ -103,6 +112,14 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="aadhar" className="text-right">Aadhar No.</Label>
               <Input id="aadhar" value={aadharNumber} onChange={(e) => setAadharNumber(e.target.value)} className="col-span-3" placeholder="Optional" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="seatNumber" className="text-right">Seat No.</Label>
+              <Input id="seatNumber" value={seatNumber} onChange={(e) => setSeatNumber(e.target.value)} className="col-span-3" placeholder="e.g., R32" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="isSeatReserved" className="text-right">Reserved</Label>
+                <Switch id="isSeatReserved" checked={isSeatReserved} onCheckedChange={setIsSeatReserved} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="dueDate" className="text-right">Due Date</Label>
@@ -153,7 +170,7 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
                 </Popover>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
             <Button type="submit">{member ? "Save Changes" : "Add Member"}</Button>
           </DialogFooter>

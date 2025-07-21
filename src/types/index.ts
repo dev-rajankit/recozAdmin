@@ -12,6 +12,8 @@ export type Member = {
   status: MemberStatus;
   avatarUrl: string;
   deletedAt?: Date | null;
+  seatNumber?: string;
+  isSeatReserved?: boolean;
 };
 
 export type ExpenseCategory = 'Rent' | 'Electricity' | 'Internet' | 'Water' | 'Maintenance' | 'Supplies' | 'Cleaning' | 'Other';

@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   await dbConnect();
   try {
     const body = await req.json();
-    const { name, phone, aadharNumber, dueDate, seatingHours, feesPaid, paymentDate } = body;
+    const { name, phone, aadharNumber, dueDate, seatingHours, feesPaid, paymentDate, seatNumber, isSeatReserved } = body;
 
     const status = getStatus(new Date(dueDate));
 
@@ -55,6 +55,8 @@ export async function POST(req: Request) {
       paymentDate: new Date(paymentDate),
       status,
       avatarUrl: `https://placehold.co/40x40.png`,
+      seatNumber,
+      isSeatReserved,
     });
 
     const savedMember = await newMember.save();
