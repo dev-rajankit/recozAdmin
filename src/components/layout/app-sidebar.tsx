@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -9,6 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -47,10 +49,18 @@ const settingsItems = [
 export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps) {
   const { logout } = useAuth();
   const router = useRouter();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const handleLogout = () => {
     logout();
     router.push('/login');
+  }
+
+  const handleSectionClick = (section: Section) => {
+    setActiveSection(section);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   }
 
   return (
@@ -72,7 +82,7 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
           {navItems.map((item) => (
             <SidebarMenuItem key={item.id}>
               <SidebarMenuButton
-                onClick={() => setActiveSection(item.id)}
+                onClick={() => handleSectionClick(item.id)}
                 isActive={activeSection === item.id}
                 tooltip={item.label}
               >
@@ -89,7 +99,7 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
           {settingsItems.map((item) => (
              <SidebarMenuItem key={item.id}>
               <SidebarMenuButton
-                onClick={() => setActiveSection(item.id)}
+                onClick={() => handleSectionClick(item.id)}
                 isActive={activeSection === item.id}
                 tooltip={item.label}
               >
