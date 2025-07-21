@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Trash2 } from "lucide-react";
+import { PlusCircle, Search } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MembersTable } from "./members-table";
 import { AddMemberDialog } from "./add-member-dialog";
@@ -21,13 +21,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MemberDetailsDialog } from "./member-details-dialog";
-import { DeletedMembersTable } from "./deleted-members-table";
 
-type TabValue = "all" | "active" | "expiring" | "expired" | "deleted";
+type TabValue = "all" | "active" | "expiring" | "expired";
 
 export function MembersView() {
   const [allMembers, setAllMembers] = useState<Member[]>([]);
-  const [deletedMembers, setDeletedMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabValue>("all");
   
@@ -56,22 +54,9 @@ export function MembersView() {
     }
   }, [toast]);
 
-  const fetchDeletedMembers = useCallback(async () => {
-    try {
-      const response = await fetch('/api/members?filter=deleted');
-      if (!response.ok) throw new Error('Failed to fetch deleted members');
-      const data = await response.json();
-      setDeletedMembers(data);
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error', description: error.message });
-    }
-  }, [toast]);
-
-
   useEffect(() => {
     fetchMembers();
-    fetchDeletedMembers();
-  }, [fetchMembers, fetchDeletedMembers]);
+  }, [fetchMembers]);
   
   const handleAddMember = async (memberData: Omit<Member, 'id' | 'status' | 'avatarUrl'>) => {
     try {
@@ -114,14 +99,6 @@ export function MembersView() {
   const handleDeleteConfirm = async () => {
     if (!memberToDelete) return;
 
-    const memberToMove = allMembers.find(m => m.id === memberToDelete);
-    
-    // Optimistic UI update
-    setAllMembers(prev => prev.filter(m => m.id !== memberToDelete));
-    if (memberToMove) {
-      setDeletedMembers(prev => [...prev, memberToMove]);
-    }
-
     try {
       const response = await fetch(`/api/members/${memberToDelete}`, {
         method: 'DELETE',
@@ -129,34 +106,17 @@ export function MembersView() {
 
       const data = await response.json();
       if (!response.ok) {
-        // Revert UI change on failure
-        fetchMembers();
-        fetchDeletedMembers();
         throw new Error(data.message || 'Failed to delete member');
       }
 
-      toast({ title: 'Success', description: 'Member moved to trash.' });
+      await fetchMembers();
+      toast({ title: 'Success', description: 'Member permanently deleted.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
     } finally {
       setMemberToDelete(null);
     }
   };
-
-  const handleRestoreMember = async (memberId: string) => {
-    try {
-        const response = await fetch(`/api/members/restore/${memberId}`, {
-            method: 'PUT'
-        });
-        const data = await response.json();
-        if(!response.ok) throw new Error(data.message || 'Failed to restore member');
-
-        await Promise.all([fetchMembers(), fetchDeletedMembers()]);
-        toast({ title: 'Success', description: 'Member restored successfully.' });
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error', description: error.message });
-    }
-  }
   
   const openEditDialog = (member: Member) => {
     setEditingMember(member);
@@ -201,15 +161,6 @@ export function MembersView() {
       (member.seatNumber && member.seatNumber.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [allMembers, activeTab, searchQuery]);
-  
-  const filteredDeletedMembers = useMemo(() => {
-    if (!searchQuery) return deletedMembers;
-    return deletedMembers.filter((member) =>
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (member.phone && member.phone.includes(searchQuery)) ||
-      (member.seatNumber && member.seatNumber.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  }, [deletedMembers, searchQuery]);
 
 
   return (
@@ -232,29 +183,20 @@ export function MembersView() {
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="all">All Members</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="expiring">Expiring Soon</TabsTrigger>
             <TabsTrigger value="expired">Expired</TabsTrigger>
-            <TabsTrigger value="deleted"><Trash2 className="mr-2 h-4 w-4" />Deleted</TabsTrigger>
           </TabsList>
           <div className="mt-4">
-            {activeTab === 'deleted' ? (
-                <DeletedMembersTable 
-                    members={filteredDeletedMembers}
-                    onRestore={handleRestoreMember}
-                    isLoading={isLoading}
-                />
-            ) : (
-                <MembersTable 
-                    members={filteredMembers} 
-                    onEdit={openEditDialog} 
-                    onDelete={setMemberToDelete} 
-                    onViewDetails={openDetailsDialog} 
-                    isLoading={isLoading} 
-                />
-            )}
+            <MembersTable 
+                members={filteredMembers} 
+                onEdit={openEditDialog} 
+                onDelete={setMemberToDelete} 
+                onViewDetails={openDetailsDialog} 
+                isLoading={isLoading} 
+            />
           </div>
         </Tabs>
         
@@ -277,9 +219,9 @@ export function MembersView() {
       <AlertDialog open={!!memberToDelete} onOpenChange={(open) => !open && setMemberToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will move the member to the deleted list. You can restore them later.
+              This action cannot be undone. This will permanently delete the member from the database.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
