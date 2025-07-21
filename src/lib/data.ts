@@ -19,6 +19,9 @@ const getStatus = (dueDate: Date): MemberStatus => {
   return 'Active';
 };
 
+// This data is now for seeding purposes or as a fallback.
+// The app will fetch data from MongoDB.
+
 export const members: Member[] = [
   { id: '1', name: 'Aarav Sharma', dueDate: addDays(today, 30), seatingHours: 100, feesPaid: 5000, paymentDate: addDays(today, -5), status: 'Active', avatarUrl: 'https://placehold.co/40x40.png' },
   { id: '2', name: 'Priya Patel', dueDate: addDays(today, 5), seatingHours: 80, feesPaid: 4500, paymentDate: addDays(today, -10), status: 'Expiring Soon', avatarUrl: 'https://placehold.co/40x40.png' },

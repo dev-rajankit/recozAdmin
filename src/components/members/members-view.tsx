@@ -1,37 +1,107 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Search } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { MembersTable } from "./members-table";
 import { AddMemberDialog } from "./add-member-dialog";
-import { members as allMembersData } from "@/lib/data";
 import { Member, MemberStatus } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+
+const getStatus = (dueDate: Date): MemberStatus => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0);
+
+  const sevenDaysFromNow = new Date(now);
+  sevenDaysFromNow.setDate(now.getDate() + 7);
+
+  if (due < now) return 'Expired';
+  if (due <= sevenDaysFromNow) return 'Expiring Soon';
+  return 'Active';
+};
 
 export function MembersView() {
-  const [members, setMembers] = useState<Member[]>(allMembersData);
+  const [members, setMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const handleAddMember = (member: Omit<Member, 'id' | 'status' | 'avatarUrl'>) => {
-    const newMember: Member = {
-      ...member,
-      id: (members.length + 1).toString(),
-      status: 'Active', // Default status, can be recalculated
-      avatarUrl: `https://placehold.co/40x40.png`
-    };
-    setMembers(prev => [...prev, newMember]);
+  const fetchMembers = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/members');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch members');
+      // Recalculate status on the client-side based on current date
+      const membersWithStatus = data.map((member: Member) => ({
+        ...member,
+        status: getStatus(member.dueDate),
+        dueDate: new Date(member.dueDate),
+        paymentDate: new Date(member.paymentDate)
+      }));
+      setMembers(membersWithStatus);
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const handleAddMember = async (memberData: Omit<Member, 'id' | 'status' | 'avatarUrl'>) => {
+    try {
+      const response = await fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(memberData),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to add member');
+      toast({ title: 'Success', description: 'Member added successfully.' });
+      fetchMembers(); // Re-fetch to get the new list with ID
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
   };
   
-  const handleUpdateMember = (updatedMember: Member) => {
-    setMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember : m));
+  const handleUpdateMember = async (updatedMember: Member) => {
+     try {
+      const response = await fetch(`/api/members/${updatedMember.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedMember),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to update member');
+      toast({ title: 'Success', description: 'Member updated successfully.' });
+      fetchMembers();
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
   };
 
-  const handleDeleteMember = (memberId: string) => {
-    setMembers(prev => prev.filter(m => m.id !== memberId));
+  const handleDeleteMember = async (memberId: string) => {
+    if (!confirm('Are you sure you want to delete this member?')) return;
+    try {
+      const response = await fetch(`/api/members/${memberId}`, {
+        method: 'DELETE',
+      });
+       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to delete member');
+      toast({ title: 'Success', description: 'Member deleted successfully.' });
+      fetchMembers();
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+    }
   };
   
   const openEditDialog = (member: Member) => {
@@ -84,16 +154,16 @@ export function MembersView() {
           <TabsTrigger value="expired">Expired</TabsTrigger>
         </TabsList>
         <TabsContent value="all" className="mt-4">
-          <MembersTable members={filteredMembers} onEdit={openEditDialog} onDelete={handleDeleteMember} />
+          <MembersTable members={filteredMembers} onEdit={openEditDialog} onDelete={handleDeleteMember} isLoading={isLoading} />
         </TabsContent>
         <TabsContent value="active" className="mt-4">
-          <MembersTable members={getMembersByStatus("Active")} onEdit={openEditDialog} onDelete={handleDeleteMember} />
+          <MembersTable members={getMembersByStatus("Active")} onEdit={openEditDialog} onDelete={handleDeleteMember} isLoading={isLoading} />
         </TabsContent>
         <TabsContent value="expiring" className="mt-4">
-          <MembersTable members={getExpiringSoonMembers()} onEdit={openEditDialog} onDelete={handleDeleteMember} />
+          <MembersTable members={getExpiringSoonMembers()} onEdit={openEditDialog} onDelete={handleDeleteMember} isLoading={isLoading} />
         </TabsContent>
         <TabsContent value="expired" className="mt-4">
-          <MembersTable members={getMembersByStatus("Expired")} onEdit={openEditDialog} onDelete={handleDeleteMember} />
+          <MembersTable members={getMembersByStatus("Expired")} onEdit={openEditDialog} onDelete={handleDeleteMember} isLoading={isLoading} />
         </TabsContent>
       </Tabs>
       
