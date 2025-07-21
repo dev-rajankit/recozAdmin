@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -42,6 +43,16 @@ export function MemberDetailsDialog({ isOpen, setIsOpen, member, onEdit }: Membe
     setIsOpen(false);
     onEdit(member);
   }
+
+  const getWhatsAppLink = () => {
+    if (!member || !member.phone) return "";
+    const phoneNumber = member.phone.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+    const message = `Hi ${member.name}, this is a friendly reminder from CoWork Central. Your membership is due for recharge. Thank you!`;
+    const encodedMessage = encodeURIComponent(message);
+    // Assuming Indian phone numbers, add 91 if not present
+    const fullPhoneNumber = phoneNumber.startsWith('91') ? phoneNumber : `91${phoneNumber}`;
+    return `https://wa.me/${fullPhoneNumber}?text=${encodedMessage}`;
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -107,9 +118,11 @@ export function MemberDetailsDialog({ isOpen, setIsOpen, member, onEdit }: Membe
 
         <DialogFooter className="sm:justify-between gap-2">
             <div className="flex gap-2">
-                 <Button variant="outline" size="sm" onClick={() => alert('WhatsApp Integration coming soon!')}>
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    WhatsApp
+                 <Button variant="outline" size="sm" asChild>
+                    <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      WhatsApp
+                    </a>
                 </Button>
                  <Button variant="outline" size="sm" onClick={() => alert('Calling feature coming soon!')}>
                     <Phone className="mr-2 h-4 w-4" />
