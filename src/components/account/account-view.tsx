@@ -33,19 +33,18 @@ export function AccountView() {
       });
       return;
     }
-    if (!newPassword) {
+    if (!currentPassword || !newPassword) {
        toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'New password cannot be empty.',
+        description: 'All password fields are required.',
       });
       return;
     }
 
     setIsSaving(true);
     try {
-      // In a real app, you would also verify the currentPassword
-      await updatePassword(newPassword);
+      await updatePassword(currentPassword, newPassword);
       toast({
         title: 'Success',
         description: 'Your password has been updated.',
@@ -88,6 +87,7 @@ export function AccountView() {
                 value={currentPassword}
                 onChange={e => setCurrentPassword(e.target.value)}
                 placeholder="Enter your current password"
+                required
               />
             </div>
              <div className="space-y-2">
@@ -98,6 +98,7 @@ export function AccountView() {
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="Enter your new password"
+                required
               />
             </div>
             <div className="space-y-2">
@@ -108,6 +109,7 @@ export function AccountView() {
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your new password"
+                required
               />
             </div>
           </CardContent>

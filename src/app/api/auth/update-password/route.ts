@@ -1,29 +1,30 @@
 import dbConnect from '@/lib/db';
 import UserModel from '@/models/user';
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 
 export async function POST(req: Request) {
   await dbConnect();
 
   try {
-    const { email, newPassword } = await req.json();
+    const { email, currentPassword, newPassword } = await req.json();
 
-    if (!email || !newPassword) {
-      return NextResponse.json({ message: 'Email and new password are required' }, { status: 400 });
+    if (!email || !currentPassword || !newPassword) {
+      return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
     }
 
-    const user = await UserModel.findOne({ email });
+    const user = await UserModel.findOne({ email }).select('+password');
 
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
     
-    // In a real app, you'd also want to verify the current password before updating.
-    // For simplicity here, we'll just update it.
+    const isMatch = await user.comparePassword(currentPassword);
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    if (!isMatch) {
+      return NextResponse.json({ message: 'Incorrect current password' }, { status: 401 });
+    }
+
+    user.password = newPassword;
     await user.save();
     
     return NextResponse.json({ success: true, message: "Password updated successfully." }, { status: 200 });

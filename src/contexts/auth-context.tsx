@@ -15,7 +15,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string) => Promise<void>;
   logout: () => void;
-  updatePassword: (newPass: string) => Promise<void>;
+  updatePassword: (currentPass: string, newPass: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,13 +74,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
   
-  const updatePassword = async (newPass: string) => {
+  const updatePassword = async (currentPass: string, newPass: string) => {
     if (!user) throw new Error("No user is logged in.");
 
     const response = await fetch('/api/auth/update-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: user.email, newPassword: newPass }),
+      body: JSON.stringify({ email: user.email, currentPassword: currentPass, newPassword: newPass }),
     });
 
     const data = await response.json();
