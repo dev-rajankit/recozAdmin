@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MemberDetailsDialog } from "./member-details-dialog";
 
-type TabValue = "all" | "active" | "expiring" | "expired";
+type TabValue = "all" | "active" | "expiring" | "expired" | "reserved";
 
 export function MembersView() {
   const [allMembers, setAllMembers] = useState<Member[]>([]);
@@ -146,6 +146,9 @@ export function MembersView() {
         case 'expired':
             listToFilter = allMembers.filter(m => m.status === 'Expired');
             break;
+        case 'reserved':
+            listToFilter = allMembers.filter(m => m.isSeatReserved);
+            break;
         case 'all':
         default:
             break;
@@ -183,11 +186,12 @@ export function MembersView() {
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="all">All Members</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="expiring">Expiring Soon</TabsTrigger>
             <TabsTrigger value="expired">Expired</TabsTrigger>
+            <TabsTrigger value="reserved">Reserved Seats</TabsTrigger>
           </TabsList>
           <div className="mt-4">
             <MembersTable 
