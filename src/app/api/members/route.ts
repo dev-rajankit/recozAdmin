@@ -17,11 +17,16 @@ const getStatus = (dueDate: Date): MemberStatus => {
 };
 
 
-export async function GET() {
+export async function GET(req: Request) {
   await dbConnect();
   try {
-    const members = await MemberModel.find({});
-    // We map to ensure the id is a string, not an ObjectId
+    const { searchParams } = new URL(req.url);
+    const includeDeleted = searchParams.get('includeDeleted') === 'true';
+
+    const query = includeDeleted ? { deletedAt: { $ne: null } } : { deletedAt: null };
+    
+    const members = await MemberModel.find(query);
+    
     const sanitizedMembers = members.map(member => ({
         ...member.toObject(),
         id: member._id.toString(),

@@ -39,63 +39,65 @@ const statusColor: Record<MemberStatus, string> = {
 export function MembersTable({ members, onEdit, onDelete, isLoading }: MembersTableProps) {
   return (
     <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Due Date</TableHead>
-            <TableHead>Seating Hours</TableHead>
-            <TableHead>Fees Paid</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            Array.from({ length: 5 }).map((_, index) => (
-              <TableRow key={index}>
-                <TableCell><Skeleton className="h-10 w-48" /></TableCell>
-                <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
-              </TableRow>
-            ))
-          ) : members.length > 0 ? (
-            members.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={member.avatarUrl} alt={member.name} data-ai-hint="person avatar"/>
-                      <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{member.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{format(new Date(member.dueDate), "MMM dd, yyyy")}</TableCell>
-                <TableCell>{member.seatingHours} hrs</TableCell>
-                <TableCell>₹{member.feesPaid.toLocaleString("en-IN")}</TableCell>
-                <TableCell>
-                   <Badge variant={statusVariant[member.status]} className={`capitalize ${statusColor[member.status]}`}>
-                    {member.status}
-                   </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <MembersTableRowActions member={member} onEdit={onEdit} onDelete={onDelete} />
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
+      <div className="relative w-full overflow-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
-                No members found.
-              </TableCell>
+              <TableHead>Name</TableHead>
+              <TableHead>Due Date</TableHead>
+              <TableHead>Seating Hours</TableHead>
+              <TableHead>Fees Paid</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
+                </TableRow>
+              ))
+            ) : members.length > 0 ? (
+              members.map((member) => (
+                <TableRow key={member.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={member.avatarUrl} alt={member.name} data-ai-hint="person avatar"/>
+                        <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{member.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{format(new Date(member.dueDate), "MMM dd, yyyy")}</TableCell>
+                  <TableCell>{member.seatingHours} hrs</TableCell>
+                  <TableCell>₹{member.feesPaid.toLocaleString("en-IN")}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant[member.status]} className={`capitalize ${statusColor[member.status]}`}>
+                      {member.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <MembersTableRowActions member={member} onEdit={onEdit} onDelete={onDelete} />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  No members found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </Card>
   );
 }

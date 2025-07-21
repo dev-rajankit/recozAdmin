@@ -9,6 +9,7 @@ export type Member = {
   paymentDate: Date;
   status: MemberStatus;
   avatarUrl: string;
+  deletedAt?: Date | null;
 };
 
 export type ExpenseCategory = 'Rent' | 'Electricity' | 'Internet' | 'Water' | 'Maintenance' | 'Supplies' | 'Cleaning' | 'Other';

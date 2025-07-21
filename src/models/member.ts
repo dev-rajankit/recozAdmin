@@ -9,6 +9,7 @@ export interface IMember extends Document {
   paymentDate: Date;
   status: MemberStatus;
   avatarUrl: string;
+  deletedAt?: Date | null;
 }
 
 const MemberSchema: Schema<IMember> = new Schema({
@@ -19,6 +20,7 @@ const MemberSchema: Schema<IMember> = new Schema({
   paymentDate: { type: Date, required: true },
   status: { type: String, required: true, enum: ['Active', 'Expiring Soon', 'Expired'] },
   avatarUrl: { type: String, required: true },
+  deletedAt: { type: Date, default: null },
 });
 
 const MemberModel: Model<IMember> = mongoose.models.Member || mongoose.model<IMember>('Member', MemberSchema);

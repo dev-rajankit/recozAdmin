@@ -50,13 +50,22 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   await dbConnect();
   const { id } = params;
   try {
-    const deletedMember = await MemberModel.findByIdAndDelete(id);
+    const { searchParams } = new URL(req.url);
+    const permanent = searchParams.get('permanent') === 'true';
 
-    if (!deletedMember) {
-      return NextResponse.json({ message: 'Member not found' }, { status: 404 });
+    if (permanent) {
+       const deletedMember = await MemberModel.findByIdAndDelete(id);
+        if (!deletedMember) {
+            return NextResponse.json({ message: 'Member not found' }, { status: 404 });
+        }
+        return NextResponse.json({ message: 'Member permanently deleted' }, { status: 200 });
+    } else {
+        const softDeletedMember = await MemberModel.findByIdAndUpdate(id, { deletedAt: new Date() }, { new: true });
+        if (!softDeletedMember) {
+            return NextResponse.json({ message: 'Member not found' }, { status: 404 });
+        }
+        return NextResponse.json({ message: 'Member moved to deleted' }, { status: 200 });
     }
-
-    return NextResponse.json({ message: 'Member deleted successfully' }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
