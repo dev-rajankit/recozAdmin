@@ -41,16 +41,17 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
 
   useEffect(() => {
     if (member) {
-      setName(member.name);
-      setPhone(member.phone);
+      setName(member.name || "");
+      setPhone(member.phone || "");
       setAadharNumber(member.aadharNumber || "");
       setDueDate(member.dueDate ? new Date(member.dueDate) : undefined);
-      setSeatingHours(member.seatingHours.toString());
-      setFeesPaid(member.feesPaid.toString());
+      setSeatingHours(member.seatingHours?.toString() || "");
+      setFeesPaid(member.feesPaid?.toString() || "");
       setPaymentDate(member.paymentDate ? new Date(member.paymentDate) : undefined);
       setSeatNumber(member.seatNumber || "");
       setIsSeatReserved(member.isSeatReserved || false);
     } else {
+      // Reset for new member
       setName("");
       setPhone("");
       setAadharNumber("");
