@@ -16,27 +16,21 @@ const getStatus = (dueDate: Date): MemberStatus => {
   return 'Active';
 };
 
-export async function GET(req: Request) {
+export async function GET() {
   await dbConnect();
-  const { searchParams } = new URL(req.url);
-  const includeDeleted = searchParams.get('includeDeleted') === 'true';
 
   try {
-    const query = includeDeleted ? { deletedAt: { $ne: null } } : { deletedAt: null };
+    const members = await MemberModel.find({});
     
-    const members = await MemberModel.find(query);
-    
-    if (!includeDeleted) {
-      for (const member of members) {
-        const newStatus = getStatus(member.dueDate);
-        if (newStatus !== member.status) {
-          member.status = newStatus;
-          await member.save();
-        }
+    for (const member of members) {
+      const newStatus = getStatus(member.dueDate);
+      if (newStatus !== member.status) {
+        member.status = newStatus;
+        await member.save();
       }
     }
     
-    const refreshedMembers = await MemberModel.find(query);
+    const refreshedMembers = await MemberModel.find({});
 
     const sanitizedMembers = refreshedMembers.map(member => ({
       ...member.toObject(),

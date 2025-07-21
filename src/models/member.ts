@@ -13,7 +13,6 @@ export interface IMember extends Document {
   avatarUrl: string;
   seatNumber?: string;
   isSeatReserved?: boolean;
-  deletedAt?: Date | null;
 }
 
 const MemberSchema: Schema<IMember> = new Schema({
@@ -28,7 +27,6 @@ const MemberSchema: Schema<IMember> = new Schema({
   avatarUrl: { type: String, required: true },
   seatNumber: { type: String },
   isSeatReserved: { type: Boolean, default: false },
-  deletedAt: { type: Date, default: null },
 });
 
 const MemberModel: Model<IMember> = mongoose.models.Member || mongoose.model<IMember>('Member', MemberSchema);

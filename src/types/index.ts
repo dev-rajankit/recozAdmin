@@ -11,7 +11,6 @@ export type Member = {
   paymentDate: Date;
   status: MemberStatus;
   avatarUrl: string;
-  deletedAt?: Date | null;
   seatNumber?: string;
   isSeatReserved?: boolean;
 };

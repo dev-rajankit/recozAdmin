@@ -2,14 +2,12 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import MemberModel from '@/models/member';
 import { MemberStatus } from '@/types';
+import { addDays, startOfDay } from 'date-fns';
 
 const getStatus = (dueDate: Date): MemberStatus => {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const due = new Date(dueDate);
-  due.setHours(0, 0, 0, 0);
-  const sevenDaysFromNow = new Date(now);
-  sevenDaysFromNow.setDate(now.getDate() + 7);
+  const now = startOfDay(new Date());
+  const due = startOfDay(new Date(dueDate));
+  const sevenDaysFromNow = addDays(now, 7);
 
   if (due < now) return 'Expired';
   if (due <= sevenDaysFromNow) return 'Expiring Soon';
@@ -58,22 +56,13 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   await dbConnect();
   const { id } = params;
   try {
-    const { searchParams } = new URL(req.url);
-    const permanent = searchParams.get('permanent') === 'true';
+    const deletedMember = await MemberModel.findByIdAndDelete(id);
 
-    if (permanent) {
-       const deletedMember = await MemberModel.findByIdAndDelete(id);
-        if (!deletedMember) {
-            return NextResponse.json({ message: 'Member not found' }, { status: 404 });
-        }
-        return NextResponse.json({ message: 'Member permanently deleted' }, { status: 200 });
-    } else {
-        const softDeletedMember = await MemberModel.findByIdAndUpdate(id, { deletedAt: new Date() }, { new: true });
-        if (!softDeletedMember) {
-            return NextResponse.json({ message: 'Member not found' }, { status: 404 });
-        }
-        return NextResponse.json({ message: 'Member moved to deleted' }, { status: 200 });
+    if (!deletedMember) {
+        return NextResponse.json({ message: 'Member not found' }, { status: 404 });
     }
+
+    return NextResponse.json({ message: 'Member permanently deleted' }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

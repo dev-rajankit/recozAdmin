@@ -20,14 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { DeletedMembersTable } from "./deleted-members-table";
 import { MemberDetailsDialog } from "./member-details-dialog";
 
-type TabValue = "all" | "active" | "expiring" | "expired" | "deleted";
+type TabValue = "all" | "active" | "expiring" | "expired";
 
 export function MembersView() {
-  const [allMembers, setAllMembers] = useState<Member[]>([]);
-  const [deletedMembers, setDeletedMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabValue>("all");
   
@@ -38,27 +36,20 @@ export function MembersView() {
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const [memberToDelete, setMemberToDelete] = useState<{id: string, permanent: boolean} | null>(null);
-  const [memberToRestore, setMemberToRestore] = useState<string | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
   
   const { toast } = useToast();
 
   const fetchMembers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [activeRes, deletedRes] = await Promise.all([
-        fetch('/api/members'),
-        fetch('/api/members?includeDeleted=true')
-      ]);
+      const response = await fetch('/api/members');
 
-      if (!activeRes.ok || !deletedRes.ok) {
+      if (!response.ok) {
         throw new Error('Failed to fetch member data');
       }
-      const activeData = await activeRes.json();
-      const deletedData = await deletedRes.json();
-
-      setAllMembers(activeData);
-      setDeletedMembers(deletedData);
+      const data = await response.json();
+      setMembers(data);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {
@@ -80,7 +71,7 @@ export function MembersView() {
       const newMember = await response.json();
       if (!response.ok) throw new Error(newMember.message || 'Failed to add member');
       
-      setAllMembers(prev => [...prev, newMember]);
+      await fetchMembers();
       toast({ title: 'Success', description: 'Member added successfully.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error adding member', description: error.message });
@@ -97,8 +88,7 @@ export function MembersView() {
       const updatedMemberFromServer = await response.json();
       if (!response.ok) throw new Error(updatedMemberFromServer.message || 'Failed to update member');
       
-      setAllMembers(prev => prev.map(m => m.id === updatedMemberFromServer.id ? updatedMemberFromServer : m));
-      
+      await fetchMembers();
       toast({ title: 'Success', description: 'Member updated successfully.' });
       
       if (viewingMember?.id === updatedMemberFromServer.id) {
@@ -109,75 +99,32 @@ export function MembersView() {
     }
   };
 
-  const softDeleteMember = async (memberId: string) => {
-    const memberToMove = allMembers.find(m => m.id === memberId);
-    if (!memberToMove) return;
-
-    // Optimistic UI Update
-    setAllMembers(prev => prev.filter(m => m.id !== memberId));
-    setDeletedMembers(prev => [...prev, {...memberToMove, deletedAt: new Date()}]);
-    setMemberToDelete(null);
-
-    try {
-        const response = await fetch(`/api/members/${memberId}`, { method: 'DELETE' });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to delete member');
-        toast({ title: 'Success', description: data.message });
-        // No need to refetch, UI is already updated.
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
-        // Revert UI on error
-        setDeletedMembers(prev => prev.filter(m => m.id !== memberId));
-        setAllMembers(prev => [...prev, memberToMove]);
-    }
-  };
-
-  const permanentDeleteMember = async (memberId: string) => {
-     // Optimistic UI Update
-    setDeletedMembers(prev => prev.filter(m => m.id !== memberId));
-    setMemberToDelete(null);
-    try {
-      const url = `/api/members/${memberId}?permanent=true`;
-      const response = await fetch(url, { method: 'DELETE' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to delete member');
-      toast({ title: 'Success', description: data.message });
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error permanently deleting', description: error.message });
-      // On error, we should probably refetch to get the real state
-      fetchMembers();
-    }
-  };
-
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!memberToDelete) return;
-    if (memberToDelete.permanent) {
-      permanentDeleteMember(memberToDelete.id);
-    } else {
-      softDeleteMember(memberToDelete.id);
-    }
-  };
-
-  const handleRestoreConfirm = async () => {
-    if (!memberToRestore) return;
-    const memberToMove = deletedMembers.find(m => m.id === memberToRestore);
-    if (!memberToMove) return;
-
-    // Optimistic UI Update
-    setDeletedMembers(prev => prev.filter(m => m.id !== memberToRestore));
-    setAllMembers(prev => [...prev, {...memberToMove, deletedAt: null}]);
-    setMemberToRestore(null);
+    
+    const originalMembers = [...members];
+    // Optimistic UI update
+    setMembers(prev => prev.filter(m => m.id !== memberToDelete));
 
     try {
-      const response = await fetch(`/api/members/${memberToRestore}/restore`, { method: 'PUT' });
+      const response = await fetch(`/api/members/${memberToDelete}`, {
+        method: 'DELETE',
+      });
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to restore member');
-      toast({ title: 'Success', description: 'Member restored successfully.' });
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete member');
+      }
+
+      toast({ title: 'Success', description: 'Member permanently deleted.' });
+      // The fetchMembers call will ensure consistency
+      await fetchMembers();
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error restoring member', description: error.message });
       // Revert UI on error
-      setAllMembers(prev => prev.filter(m => m.id !== memberToRestore));
-      setDeletedMembers(prev => [...prev, memberToMove]);
+      setMembers(originalMembers);
+      toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
+    } finally {
+      setMemberToDelete(null);
     }
   };
   
@@ -201,20 +148,17 @@ export function MembersView() {
 
     switch(activeTab) {
         case 'active':
-            listToFilter = allMembers.filter(m => m.status === 'Active');
+            listToFilter = members.filter(m => m.status === 'Active');
             break;
         case 'expiring':
-            listToFilter = allMembers.filter(m => m.status === 'Expiring Soon');
+            listToFilter = members.filter(m => m.status === 'Expiring Soon');
             break;
         case 'expired':
-            listToFilter = allMembers.filter(m => m.status === 'Expired');
-            break;
-        case 'deleted':
-            listToFilter = deletedMembers;
+            listToFilter = members.filter(m => m.status === 'Expired');
             break;
         case 'all':
         default:
-            listToFilter = allMembers;
+            listToFilter = members;
             break;
     }
 
@@ -227,29 +171,7 @@ export function MembersView() {
       member.phone.includes(searchQuery) ||
       (member.seatNumber && member.seatNumber.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-  }, [allMembers, deletedMembers, activeTab, searchQuery]);
-
-  const renderTable = () => {
-    if (activeTab === 'deleted') {
-      return (
-        <DeletedMembersTable 
-          members={filteredMembers}
-          onRestore={setMemberToRestore}
-          onPermanentDelete={(id) => setMemberToDelete({id, permanent: true})}
-          isLoading={isLoading}
-        />
-      );
-    }
-    return (
-      <MembersTable 
-        members={filteredMembers} 
-        onEdit={openEditDialog} 
-        onDelete={(id) => setMemberToDelete({id, permanent: false})} 
-        onViewDetails={openDetailsDialog} 
-        isLoading={isLoading} 
-      />
-    );
-  };
+  }, [members, activeTab, searchQuery]);
 
   return (
     <>
@@ -276,10 +198,15 @@ export function MembersView() {
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="expiring">Expiring Soon</TabsTrigger>
             <TabsTrigger value="expired">Expired</TabsTrigger>
-            <TabsTrigger value="deleted">Deleted</TabsTrigger>
           </TabsList>
           <div className="mt-4">
-            {renderTable()}
+            <MembersTable 
+                members={filteredMembers} 
+                onEdit={openEditDialog} 
+                onDelete={setMemberToDelete} 
+                onViewDetails={openDetailsDialog} 
+                isLoading={isLoading} 
+            />
           </div>
         </Tabs>
         
@@ -304,30 +231,12 @@ export function MembersView() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              {memberToDelete?.permanent
-                ? "This action cannot be undone. This will permanently delete this member's data from the database."
-                : "This will move the member to the deleted list. You can restore them later."
-              }
+              This action cannot be undone. This will permanently delete this member's data from the database.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setMemberToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-       <AlertDialog open={!!memberToRestore} onOpenChange={(open) => !open && setMemberToRestore(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Restore Member?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will restore the member to the active list.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setMemberToRestore(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRestoreConfirm}>Restore</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
