@@ -68,8 +68,7 @@ export function MembersView() {
       
       const activeData = await activeRes.json();
       const deletedData = await deletedRes.json();
-
-      // The status is client-side logic, so we compute it here.
+      
       setMembers(activeData.map((m: any) => ({...m, status: getStatus(new Date(m.dueDate))})));
       setDeletedMembers(deletedData);
 
@@ -114,10 +113,12 @@ export function MembersView() {
       
       await fetchMembers(); // Refetch all members
       
-      const refreshedMember = members.find(m => m.id === data._id) || { ...data, status: getStatus(new Date(data.dueDate)) };
+      const refreshedMemberInList = (await (await fetch('/api/members')).json()).find((m: any) => m._id === data._id);
 
-      if(viewingMember?.id === updatedMemberData.id) {
-        setViewingMember(refreshedMember);
+      if (viewingMember?.id === updatedMemberData.id) {
+        if(refreshedMemberInList) {
+            setViewingMember({...refreshedMemberInList, id: refreshedMemberInList._id.toString(), status: getStatus(new Date(refreshedMemberInList.dueDate))});
+        }
       }
 
     } catch (error: any) {
@@ -137,7 +138,7 @@ export function MembersView() {
        const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to delete member');
       toast({ title: 'Success', description: data.message });
-      fetchMembers(); // Refetch all members
+      fetchMembers();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error deleting member', description: error.message });
     } finally {
@@ -154,7 +155,7 @@ export function MembersView() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to restore member');
       toast({ title: 'Success', description: 'Member restored successfully.' });
-      fetchMembers(); // Refetch all members
+      fetchMembers();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error restoring member', description: error.message });
     } finally {
