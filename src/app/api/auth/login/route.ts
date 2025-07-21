@@ -3,9 +3,9 @@ import UserModel from '@/models/user';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
-  await dbConnect();
-
   try {
+    await dbConnect();
+
     const { email, password } = await req.json();
 
     if (!email || !password) {
@@ -24,9 +24,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
-    // In a real app, you would generate a JWT token here and send it back
-    return NextResponse.json({ success: true, user: { id: user._id, email: user.email } }, { status: 200 });
+    return NextResponse.json({ success: true, user: { id: user._id.toString(), email: user.email } }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    console.error('Login API Error:', error);
+    return NextResponse.json({ message: error.message || 'An unexpected server error occurred.' }, { status: 500 });
   }
 }
