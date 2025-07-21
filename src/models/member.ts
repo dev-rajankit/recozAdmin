@@ -3,6 +3,8 @@ import type { MemberStatus } from '@/types';
 
 export interface IMember extends Document {
   name: string;
+  phone: string;
+  aadharNumber?: string;
   dueDate: Date;
   seatingHours: number;
   feesPaid: number;
@@ -14,6 +16,8 @@ export interface IMember extends Document {
 
 const MemberSchema: Schema<IMember> = new Schema({
   name: { type: String, required: true },
+  phone: { type: String, required: true },
+  aadharNumber: { type: String },
   dueDate: { type: Date, required: true },
   seatingHours: { type: Number, required: true },
   feesPaid: { type: Number, required: true },

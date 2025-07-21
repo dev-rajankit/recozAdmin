@@ -3,6 +3,8 @@ export type MemberStatus = 'Active' | 'Expiring Soon' | 'Expired';
 export type Member = {
   id: string;
   name: string;
+  phone: string;
+  aadharNumber?: string;
   dueDate: Date;
   seatingHours: number;
   feesPaid: number;

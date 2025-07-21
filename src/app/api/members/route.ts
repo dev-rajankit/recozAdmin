@@ -41,12 +41,14 @@ export async function POST(req: Request) {
   await dbConnect();
   try {
     const body = await req.json();
-    const { name, dueDate, seatingHours, feesPaid, paymentDate } = body;
+    const { name, phone, aadharNumber, dueDate, seatingHours, feesPaid, paymentDate } = body;
 
     const status = getStatus(new Date(dueDate));
 
     const newMember = new MemberModel({
       name,
+      phone,
+      aadharNumber,
       dueDate: new Date(dueDate),
       seatingHours,
       feesPaid,

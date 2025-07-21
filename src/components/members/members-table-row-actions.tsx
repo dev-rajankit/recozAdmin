@@ -1,6 +1,6 @@
 "use client"
 
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { MoreHorizontal, Pencil, Trash2, FileText } from "lucide-react"
 
 import {
   DropdownMenu,
@@ -16,9 +16,10 @@ interface MembersTableRowActionsProps {
   member: Member
   onEdit: (member: Member) => void
   onDelete: (memberId: string) => void
+  onViewDetails: (member: Member) => void
 }
 
-export function MembersTableRowActions({ member, onEdit, onDelete }: MembersTableRowActionsProps) {
+export function MembersTableRowActions({ member, onEdit, onDelete, onViewDetails }: MembersTableRowActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -28,6 +29,10 @@ export function MembersTableRowActions({ member, onEdit, onDelete }: MembersTabl
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
+         <DropdownMenuItem onClick={() => onViewDetails(member)}>
+          <FileText className="mr-2 h-4 w-4" />
+          Details
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onEdit(member)}>
           <Pencil className="mr-2 h-4 w-4" />
           Edit

@@ -20,14 +20,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DeletedMembersTable } from "./deleted-members-table";
-
+import { MemberDetailsDialog } from "./member-details-dialog";
 
 export function MembersView() {
   const [members, setMembers] = useState<Member[]>([]);
   const [deletedMembers, setDeletedMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [memberToDelete, setMemberToDelete] = useState<{id: string, permanent: boolean} | null>(null);
   const [memberToRestore, setMemberToRestore] = useState<string | null>(null);
@@ -116,6 +118,11 @@ export function MembersView() {
       if (!response.ok) throw new Error(data.message || 'Failed to update member');
       toast({ title: 'Success', description: 'Member updated successfully.' });
       fetchMembers();
+      // If the currently viewed member is the one being updated, refresh the details dialog
+      if(viewingMember?.id === updatedMember.id) {
+        setViewingMember(updatedMember);
+      }
+
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
@@ -160,12 +167,17 @@ export function MembersView() {
   
   const openEditDialog = (member: Member) => {
     setEditingMember(member);
-    setIsDialogOpen(true);
+    setIsAddMemberDialogOpen(true);
   }
 
   const openAddDialog = () => {
     setEditingMember(null);
-    setIsDialogOpen(true);
+    setIsAddMemberDialogOpen(true);
+  }
+
+  const openDetailsDialog = (member: Member) => {
+    setViewingMember(member);
+    setIsDetailsDialogOpen(true);
   }
 
   const filteredMembers = useMemo(() => {
@@ -214,16 +226,16 @@ export function MembersView() {
             <TabsTrigger value="deleted">Deleted</TabsTrigger>
           </TabsList>
           <TabsContent value="all" className="mt-4">
-            <MembersTable members={filteredMembers} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} isLoading={isLoading} />
+            <MembersTable members={filteredMembers} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} onViewDetails={openDetailsDialog} isLoading={isLoading} />
           </TabsContent>
           <TabsContent value="active" className="mt-4">
-            <MembersTable members={getMembersByStatus("Active")} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} isLoading={isLoading} />
+            <MembersTable members={getMembersByStatus("Active")} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} onViewDetails={openDetailsDialog} isLoading={isLoading} />
           </TabsContent>
           <TabsContent value="expiring" className="mt-4">
-            <MembersTable members={getMembersByStatus("Expiring Soon")} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} isLoading={isLoading} />
+            <MembersTable members={getMembersByStatus("Expiring Soon")} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} onViewDetails={openDetailsDialog} isLoading={isLoading} />
           </TabsContent>
           <TabsContent value="expired" className="mt-4">
-            <MembersTable members={getMembersByStatus("Expired")} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} isLoading={isLoading} />
+            <MembersTable members={getMembersByStatus("Expired")} onEdit={openEditDialog} onDelete={(id) => setMemberToDelete({id, permanent: false})} onViewDetails={openDetailsDialog} isLoading={isLoading} />
           </TabsContent>
           <TabsContent value="deleted" className="mt-4">
             <DeletedMembersTable 
@@ -236,12 +248,20 @@ export function MembersView() {
         </Tabs>
         
         <AddMemberDialog
-          isOpen={isDialogOpen}
-          setIsOpen={setIsDialogOpen}
+          isOpen={isAddMemberDialogOpen}
+          setIsOpen={setIsAddMemberDialogOpen}
           onAddMember={handleAddMember}
           onUpdateMember={handleUpdateMember}
           member={editingMember}
         />
+
+        <MemberDetailsDialog
+          isOpen={isDetailsDialogOpen}
+          setIsOpen={setIsDetailsDialogOpen}
+          member={viewingMember}
+          onEdit={openEditDialog}
+        />
+
       </div>
 
       <AlertDialog open={!!memberToDelete} onOpenChange={(open) => !open && setMemberToDelete(null)}>

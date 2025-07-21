@@ -29,6 +29,8 @@ interface AddMemberDialogProps {
 
 export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember, member }: AddMemberDialogProps) {
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [aadharNumber, setAadharNumber] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [seatingHours, setSeatingHours] = useState("");
   const [feesPaid, setFeesPaid] = useState("");
@@ -37,12 +39,16 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
   useEffect(() => {
     if (member) {
       setName(member.name);
+      setPhone(member.phone);
+      setAadharNumber(member.aadharNumber || "");
       setDueDate(member.dueDate);
       setSeatingHours(member.seatingHours.toString());
       setFeesPaid(member.feesPaid.toString());
       setPaymentDate(member.paymentDate);
     } else {
       setName("");
+      setPhone("");
+      setAadharNumber("");
       setDueDate(undefined);
       setSeatingHours("");
       setFeesPaid("");
@@ -52,13 +58,15 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !dueDate || !seatingHours || !feesPaid || !paymentDate) {
-      alert("Please fill all fields");
+    if (!name || !phone || !dueDate || !seatingHours || !feesPaid || !paymentDate) {
+      alert("Please fill all required fields");
       return;
     }
 
     const memberData = {
       name,
+      phone,
+      aadharNumber,
       dueDate,
       seatingHours: parseInt(seatingHours, 10),
       feesPaid: parseInt(feesPaid, 10),
@@ -87,6 +95,14 @@ export function AddMemberDialog({ isOpen, setIsOpen, onAddMember, onUpdateMember
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" required />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">Phone</Label>
+              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="col-span-3" required />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="aadhar" className="text-right">Aadhar No.</Label>
+              <Input id="aadhar" value={aadharNumber} onChange={(e) => setAadharNumber(e.target.value)} className="col-span-3" placeholder="Optional" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="dueDate" className="text-right">Due Date</Label>
