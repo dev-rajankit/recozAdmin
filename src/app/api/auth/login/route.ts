@@ -28,8 +28,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, user: { id: user._id.toString(), email: user.email } }, { status: 200 });
   } catch (error: any) {
     console.error('Login API Error:', error);
-    // Ensure a clear error message is sent back to the client
-    const errorMessage = error.message || 'An unexpected server error occurred.';
-    return NextResponse.json({ message: errorMessage }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'An unexpected server error occurred.' }, { status: 500 });
   }
 }
